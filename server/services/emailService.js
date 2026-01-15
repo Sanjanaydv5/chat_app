@@ -36,7 +36,7 @@ const sendOtpToEmail = async (email, otp) => {
 
       <p>If you didn’t request this OTP, please ignore this email.</p>
 
-      <p style="margin-top: 20px;">Thanks & Regards,<br/>WhatsApp Web Security Team</p>
+      <p style="margin-top: 20px;">Thanks & Regards,<br/>Sanjana's chat_app</p>
 
       <hr style="margin: 30px 0;" />
 

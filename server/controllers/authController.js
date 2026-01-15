@@ -1,8 +1,8 @@
-const User = require("../../models/User");
-const sendOtpToEmail = require("../../services/email/emailService");
-const otpGenerate = require("../../utils/otpGenerater");
-const response = require("../../utils/responseHandler");
-const tiwilioService = require("../../services/twilioService");
+const User = require("../models/User");
+const { sendOtpToEmail } = require("../services/emailService");
+const otpGenerate = require("../utils/otpGenerater");
+const response = require("../utils/responseHandler");
+const tiwilioService = require("../services/twilioService");
 
 
 

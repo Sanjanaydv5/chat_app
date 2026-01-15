@@ -4,8 +4,8 @@ const authController = require('../controllers/authController');
 const router = express.Router();
 
 // Route for user registration
-router.post('/send-otp', authController.sendOtp);
-router.post('/verify-otp', authController.verifyOtp);
+router.post('/send-otp', authController.sendOTP);
+router.post('/verify-otp', authController.verifyOTP);
 
 
 module.exports = router;
