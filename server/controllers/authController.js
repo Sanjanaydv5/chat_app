@@ -125,6 +125,24 @@ const updateProfile = async (req, res) => {
     }
 }
 
+const checkAuthenticated = async(req, res) => {
+    try {
+        const userId = req.user.id;  // Changed from userid to id
+        if (!userId) {
+            return response(res, 404, false, "User not authenticated! please login");
+        }
+        const user = await User.findById(userId);
+        if (!user) {
+            return response(res, 404, false, "User not found");
+        }
+        return response(res, 200, true, "User is authenticated and allow to use this chat app", user);
+    } catch (error) {
+        console.error("Error in checkAuthenticated:", error);
+        return response(res, 500, false, "Internal Server Error");
+    }
+}
+
+
 const logout = (req, res) => {
     try {
         res.cookie("auth_token", "", {expires:new Date(0)});
@@ -137,5 +155,5 @@ const logout = (req, res) => {
 
 module.exports = {
     sendOTP,
-    verifyOTP,updateProfile, logout
+    verifyOTP,updateProfile, logout, checkAuthenticated
 };

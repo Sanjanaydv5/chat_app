@@ -11,5 +11,6 @@ router.get('/logout', authController.logout);
 
 // Route for updating user profile
 router.put('/update-profile', authMiddleware, authController.updateProfile);
+router.get('/check-authenticated', authMiddleware, authController.checkAuthenticated);
 
 module.exports = router;
