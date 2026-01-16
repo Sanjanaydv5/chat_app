@@ -96,17 +96,22 @@ const verifyOTP = async (req, res) => {
 const updateProfile = async (req, res) => {
     // Implementation for updating user profile
     const {username,agreed,about}=req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;  // Changed from userId to id (matches generateToken)
     try {
         const user = await User.findById(userId);
-        const file = req.file;
-        if(file){
-            const uploadResult = await uploadFileToCloudinary(file);
-            console.log("Upload Result:", uploadResult);
-            user.profilePicture = uploadResult?.secure_url;
-        } else if (req.body.profilePicture) {
-            user.profilePicture = req.body.profilePicture;
+        if (!user) {
+            return response(res, 404, false, "User not found");
         }
+        
+        // For now, skip file upload if uploadFileToCloudinary is not set up
+        // const file = req.file;
+        // if(file){
+        //     const uploadResult = await uploadFileToCloudinary(file);
+        //     console.log("Upload Result:", uploadResult);
+        //     user.profilePicture = uploadResult?.secure_url;
+        // } else if (req.body.profilePicture) {
+        //     user.profilePicture = req.body.profilePicture;
+        // }
 
         if (username) user.username = username;
         if (agreed) user.agreed = agreed;
