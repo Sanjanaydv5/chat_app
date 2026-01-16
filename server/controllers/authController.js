@@ -164,7 +164,7 @@ const getAllUsers = async (req, res) => {
 
         const usersWithConversations = await Promise.all(users.map(async (user) => {
             // Fetch or create conversation logic can be added here
-            const conversation = await conversation.findOne({
+            const conversationData = await conversation.findOne({
                 participants: { $all: [loggedInUser, user?._id] }
             }).populate(
                 {
@@ -174,7 +174,7 @@ const getAllUsers = async (req, res) => {
             ).lean();
             return {
                 ...user,
-                conversation: conversation || null
+                conversation: conversationData || null
             };
         }));
 
