@@ -7,6 +7,7 @@ const router = express.Router();
 // Route for user registration
 router.post('/send-otp', authController.sendOTP);
 router.post('/verify-otp', authController.verifyOTP);
+router.get('/logout', authController.logout);
 
 // Route for updating user profile
 router.put('/update-profile', authMiddleware, authController.updateProfile);

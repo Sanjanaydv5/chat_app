@@ -125,7 +125,17 @@ const updateProfile = async (req, res) => {
     }
 }
 
+const logout = (req, res) => {
+    try {
+        res.cookie("auth_token", "", {expires:new Date(0)});
+        return response(res, 200, true, "Logged out successfully");
+    } catch (error) {
+        console.error("Error in logout:", error);
+        return response(res, 500, false, "Internal Server Error");
+    }
+}
+
 module.exports = {
     sendOTP,
-    verifyOTP,updateProfile
+    verifyOTP,updateProfile, logout
 };
