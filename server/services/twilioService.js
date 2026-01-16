@@ -23,7 +23,9 @@ const sendOtpToPhoneNumber = async (phoneNumber) => {
     console.log('OTP sent successfully:', response);
     return response;
   } catch (error) {
-    console.error('Error sending OTP:', error);
+    console.error('Error sending OTP:', error.message || error);
+    console.error('Error code:', error.code);
+    console.error('Error status:', error.status);
     throw error;
   }
 };
@@ -34,7 +36,7 @@ const verifyOtp = async (phoneNumber, otp) => {
   try {
     console.log('This is my otp:', otp);
     console.log('Verifying OTP for phone number:', phoneNumber);
-    const response = await client.verify.v2.services(serviceSid).verifications.create({
+    const response = await client.verify.v2.services(serviceSid).verificationChecks.create({
         to: phoneNumber,
         code: otp,
     });

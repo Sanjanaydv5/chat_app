@@ -9,6 +9,10 @@ const response = (res, statusCode, success, message, data = null) => {
         message: message,
     };
 
+    if (data) {
+        responseObject.data = data;
+    }
+
     return res.status(statusCode).json(responseObject);
 }
 

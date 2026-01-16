@@ -3,6 +3,7 @@ const { sendOtpToEmail } = require("../services/emailService");
 const otpGenerate = require("../utils/otpGenerater");
 const response = require("../utils/responseHandler");
 const tiwilioService = require("../services/twilioService");
+const generateToken = require("../utils/generateToken");
 
 
 
@@ -19,20 +20,20 @@ const sendOTP = async (req, res) => {
             if (!user) {
                 user = new User({ email });
             }
-            user.emailOTP = otp;
-            user.emailOTPExpiry = expiry;
+            user.emailOtp = otp;
+            user.emailOtpExpiry = expiry;
             await user.save();
 
             await sendOtpToEmail(email, otp);
             return response(res, 200, true, "OTP sent to email", { email });
         }
-        if (phoneNumber && phoneSuffix) {
-            return response(res, 400, "phoneNumber and phoneSuffix are required");
+        if (!phoneNumber || !phoneSuffix) {
+            return response(res, 400, false, "phoneNumber and phoneSuffix are required");
         }
         const fullPhoneNumber = `+${phoneSuffix}${phoneNumber}`;
         user = await User.findOne({ phoneNumber });
         if (!user) {
-            user = await new User({ phoneNumber, phoneSuffix });
+            user = new User({ phoneNumber, phoneSuffix });
         }
         await tiwilioService.sendOtpToPhoneNumber(fullPhoneNumber);
         await user.save();
@@ -56,16 +57,16 @@ const verifyOTP = async (req, res) => {
                 return response(res, 404, false, "User not found");
             }
             const now = new Date();
-            if (!user.emailOTP || String(user.emailOTP) !== String(otp) || now > new Date(user.emailOTPExpiry)) {
+            if (!user.emailOtp || String(user.emailOtp) !== String(otp) || now > new Date(user.emailOtpExpiry)) {
                 return response(res, 400, false, "Invalid or Expired OTP");
             };
             user.isVerified = true;
-            user.emailOTP = null;
-            user.emailOTPExpiry = null;
+            user.emailOtp = null;
+            user.emailOtpExpiry = null;
             await user.save();
         } else {
-            if (phoneNumber && phoneSuffix) {
-                return response(res, 400, "phoneNumber and phoneSuffix are required");
+            if (!phoneNumber || !phoneSuffix) {
+                return response(res, 400, false, "phoneNumber and phoneSuffix are required");
             }
             const fullPhoneNumber = `+${phoneSuffix}${phoneNumber}`;
             user = await User.findOne({ phoneNumber });
@@ -73,7 +74,7 @@ const verifyOTP = async (req, res) => {
                 return response(res, 404, false, "User not found");
             }
             const result = await tiwilioService.verifyOtp(fullPhoneNumber, otp);
-            if (!result.status !== "approved") {
+            if (result.status !== "approved") {
                 return response(res, 400, false, "Invalid or Expired OTP");
             }
             user.isVerified = true;
