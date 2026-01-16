@@ -4,6 +4,8 @@ const otpGenerate = require("../utils/otpGenerater");
 const response = require("../utils/responseHandler");
 const tiwilioService = require("../services/twilioService");
 const generateToken = require("../utils/generateToken");
+const { uploadFileToCloudinary } = require("../utils/cloudinaryUpload");
+const conversation = require("../models/conversation");
 
 
 
@@ -83,7 +85,7 @@ const verifyOTP = async (req, res) => {
         const token = generateToken(user?._id);
         res.cookie("auth_token", token, {
             httpOnly: true,
-            maxAge:1000*60*60*24*365, //1 year
+            maxAge: 1000 * 60 * 60 * 24 * 365, //1 year
         });
         return response(res, 200, true, "OTP verified successfully", { user, token }
         )
@@ -95,14 +97,14 @@ const verifyOTP = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     // Implementation for updating user profile
-    const {username,agreed,about}=req.body;
+    const { username, agreed, about } = req.body;
     const userId = req.user.id;  // Changed from userId to id (matches generateToken)
     try {
         const user = await User.findById(userId);
         if (!user) {
             return response(res, 404, false, "User not found");
         }
-        
+
         // For now, skip file upload if uploadFileToCloudinary is not set up
         // const file = req.file;
         // if(file){
@@ -125,7 +127,7 @@ const updateProfile = async (req, res) => {
     }
 }
 
-const checkAuthenticated = async(req, res) => {
+const checkAuthenticated = async (req, res) => {
     try {
         const userId = req.user.id;  // Changed from userid to id
         if (!userId) {
@@ -145,7 +147,7 @@ const checkAuthenticated = async(req, res) => {
 
 const logout = (req, res) => {
     try {
-        res.cookie("auth_token", "", {expires:new Date(0)});
+        res.cookie("auth_token", "", { expires: new Date(0) });
         return response(res, 200, true, "Logged out successfully");
     } catch (error) {
         console.error("Error in logout:", error);
@@ -153,7 +155,39 @@ const logout = (req, res) => {
     }
 }
 
-module.exports = {
-    sendOTP,
-    verifyOTP,updateProfile, logout, checkAuthenticated
-};
+const getAllUsers = async (req, res) => {
+    const loggedInUser = req.user.id;
+    try {
+        const users = await User.find({ _id: { $ne: loggedInUser } }).select(
+            "username profilePicture lastSeen about"
+        ).lean();
+
+        const usersWithConversations = await Promise.all(users.map(async (user) => {
+            // Fetch or create conversation logic can be added here
+            const conversation = await conversation.findOne({
+                participants: { $all: [loggedInUser, user?._id] }
+            }).populate(
+                {
+                    path: "lastMessage",
+                    select: "content createdAt sender receiver"
+                }
+            ).lean();
+            return {
+                ...user,
+                conversation: conversation || null
+            };
+        }));
+
+        return response(res, 200, true, "Users fetched successfully", {
+            users: usersWithConversations
+        })
+    } catch (error) {
+        console.error("Error in getAllUsers:", error);
+        return response(res, 500, false, "Internal Server Error");
+    }
+}
+
+    module.exports = {
+        sendOTP,
+        verifyOTP, updateProfile, logout, checkAuthenticated, getAllUsers
+    };
