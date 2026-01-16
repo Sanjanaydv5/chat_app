@@ -93,6 +93,23 @@ const verifyOTP = async (req, res) => {
     }
 }
 
+const updateProfile = async (req, res) => {
+    // Implementation for updating user profile
+    const {username,agreed,about}=req.body;
+    const userId = req.user.userId;
+    try {
+        const user = await User.findById(userId);
+        const file = req.file;
+        if(file){
+            const uploadResult = 
+            user.profilePicture = uploadResult.secure_url;
+        }
+    } catch (error) {
+        console.error("Error in updateProfile:", error);
+        return response(res, 500, false, "Internal Server Error");
+    }
+}
+
 module.exports = {
     sendOTP,
     verifyOTP,
