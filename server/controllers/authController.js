@@ -112,6 +112,7 @@ const updateProfile = async (req, res) => {
         if (agreed) user.agreed = agreed;
         if (about) user.about = about;
         await user.save();
+        console.log(user);
         return response(res, 200, true, "Profile updated successfully", user);
     } catch (error) {
         console.error("Error in updateProfile:", error);

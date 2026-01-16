@@ -7,5 +7,7 @@ const router = express.Router();
 router.post('/send-otp', authController.sendOTP);
 router.post('/verify-otp', authController.verifyOTP);
 
+// Route for updating user profile
+router.put('/update-profile', authMiddleware.multerMiddleware, authController.updateProfile);
 
 module.exports = router;
