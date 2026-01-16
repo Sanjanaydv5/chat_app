@@ -101,9 +101,18 @@ const updateProfile = async (req, res) => {
         const user = await User.findById(userId);
         const file = req.file;
         if(file){
-            const uploadResult = 
-            user.profilePicture = uploadResult.secure_url;
+            const uploadResult = await uploadFileToCloudinary(file);
+            console.log("Upload Result:", uploadResult);
+            user.profilePicture = uploadResult?.secure_url;
+        } else if (req.body.profilePicture) {
+            user.profilePicture = req.body.profilePicture;
         }
+
+        if (username) user.username = username;
+        if (agreed) user.agreed = agreed;
+        if (about) user.about = about;
+        await user.save();
+        return response(res, 200, true, "Profile updated successfully", user);
     } catch (error) {
         console.error("Error in updateProfile:", error);
         return response(res, 500, false, "Internal Server Error");
@@ -112,5 +121,5 @@ const updateProfile = async (req, res) => {
 
 module.exports = {
     sendOTP,
-    verifyOTP,
+    verifyOTP,updateProfile
 };
