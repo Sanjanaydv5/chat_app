@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const connectDb = require("./config/dbConnect");
 const bodyParser = require("body-parser");
 const authRoute = require("./routes/authRoute");
+const chatRoute = require("./routes/chatRoute");
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoute);
+app.use("/api/chat", chatRoute);
 
 // 404 handler
 app.use((req, res) => {
