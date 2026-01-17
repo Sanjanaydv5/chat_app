@@ -1,5 +1,7 @@
 const conversation = require("../models/conversation");
-
+const response = require("../utils/responseHandler");
+const Message = require("../models/Message");
+const { uploadFileToCloudinary } = require("../utils/cloudinaryUpload");
 
 exports.sendMessage = async (req, res) => {
     // Implementation for sending a message
@@ -39,9 +41,9 @@ exports.sendMessage = async (req, res) => {
             return response(res, 400, false, "Message content or file is required");
         }
         const message = new Message({
-            conversation: Conversation?._id,
+            conversation: chatConversation._id,
             sender: senderId,
-            receiverId: receiverId,
+            receiver: receiverId,
             content,
             contentType,
             imageOrVideoUrl,
@@ -51,10 +53,10 @@ exports.sendMessage = async (req, res) => {
         await message.save();
 
         if (message?.content) {
-            conversation.lastMessage = message._id;
+            chatConversation.lastMessage = message._id;
         }
-        conversation.unreadCount += 1;
-        await conversation.save();
+        chatConversation.unreadCount += 1;
+        await chatConversation.save();
 
         const populatedMessage = await Message.findOne(message?._id)
             .populate("sender", "username profilePicture")
