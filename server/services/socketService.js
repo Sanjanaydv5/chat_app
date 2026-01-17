@@ -136,23 +136,80 @@ socket.on("add_reaction", async ({ messageId, emoji, userId, reactionUserId }) =
             } else {
                 message.reactions(existingIndex).emoji = emoji;
             }
-        } else{
+        } else {
             //add new reactions
-            message.reactions.push({user:reactionUserId,emoji});
+            message.reactions.push({ user: reactionUserId, emoji });
         }
         await message.save();
 
         const populateMessage = await Message.findOne(message?.id)
-        .populate("sender","username profilePicture")
-        .populate("receiver","username profilePicture")
-        .populate("reactions.User","username")        
+            .populate("sender", "username profilePicture")
+            .populate("receiver", "username profilePicture")
+            .populate("reactions.User", "username")
 
         const reactionUpdated = {
             messageId,
-            reaction:populatedMessage.reactions
+            reaction: populatedMessage.reactions
         }
 
-    } catch (error) {
+        const senderSocket = onlineUsers.get(populateMessage.sender._id.toString());
+        const receiverSocket = onlineUsers.get(populateMessage.receiver._id.toString());
 
+        if (senderSocket) io.to(senderSocket).emit("reaction_update", reactionUpdated)
+        if (receiverSocket) io.to(receiverSocket).emit("reaction_update", reactionUpdated)
+
+    } catch (error) {
+        console.log("Error handling reaction", error)
     }
 })
+
+
+//handle disconnection and mark user offline
+// handle disconnection and mark user offline
+const handleDisconnected = async () => {
+    try {
+        // remove from online users
+        onlineUsers.delete(userId);
+
+        // clear all typing timeouts
+        if (typingUsers.has(userId)) {
+            const userTypingData = typingUsers.get(userId);
+
+            Object.keys(userTypingData).forEach((key) => {
+                if (key.endsWith('_timeout')) {
+                    clearTimeout(userTypingData[key]);
+                }
+            });
+
+            typingUsers.delete(userId);
+        }
+
+        // update user status in DB
+        await User.findByIdAndUpdate(userId, {
+            isOnline: false,
+            lastSeen: new Date(),
+        });
+
+        // notify all clients
+        io.emit("user_status", {
+            userId,
+            isOnline: false,
+            lastSeen: new Date(),
+        });
+
+        // leave personal room
+        socket.leave(userId);
+
+        console.log(`user ${userId} disconnected`);
+    } catch (error) {
+        console.error("Error handling disconnection", error);
+    }
+    //disconnect event
+    socket.on("disconnect", handleDisconnected)
+
+    io.socketUserMap = onlineUsers;
+    return io;
+};
+
+
+module.exports = initializeSocket;
