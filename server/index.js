@@ -6,6 +6,7 @@ const connectDb = require("./config/dbConnect");
 const bodyParser = require("body-parser");
 const authRoute = require("./routes/authRoute");
 const chatRoute = require("./routes/chatRoute");
+const statusRoute = require("./routes/statusRoute")
 const initializeSocket = require("./services/socketService")
 const http = require('http')
 
@@ -50,7 +51,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", authRoute);
 app.use("/api/chat", chatRoute);
-//app.use('/api/status',statusRoute)
+app.use('/api/status',statusRoute)
 
 // 404 handler
 app.use((req, res) => {
