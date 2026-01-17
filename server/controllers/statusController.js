@@ -50,6 +50,16 @@ exports.createStatus = async (req, res) => {
             .populate("user", "username profilePicture")
             .populate("viewers", "username profilePicture");
 
+        //emit socket event
+        if (req.io && req.socketUserMap) {
+            //Broadcast to all connecting users except the creator
+            for (const [connectedUserId, socketId] of req.socketUserMap) {
+                if (connectedUserId !== userId) {
+                    req.io.to(socketId).emit("new_status", populatedStatus)
+                }
+            }
+        }
+
         return response(res, 201, true, "Status created successfully", populatedStatus);
 
     } catch (error) {
@@ -95,6 +105,23 @@ exports.viewStatus = async (req, res) => {
             .populate("user", "username profilePicture")
             .populate("viewers", "username profilePicture");
 
+        //emit socket event
+        if (req.io && req.socketUserMap) {
+            //Broadcast to all connecting users except the creator
+            const statusOwnerSocketId = req.socketUserMap.get(status.user._id.toString())
+            if (statusOwnerSocketId) {
+                const viewData = {
+                    statusId,
+                    viewerId: userId,
+                    totalViewers: updateStatus.viewers.length,
+                    viewers: updateStatus.viewers
+                }
+                res.io.to(statusOwnerSocketId).emit("status_viewed", viewData)
+            } else {
+                console.log('status owner not connected')
+            }
+        }
+
         return response(res, 200, true, "Status viewed successfully", populatedStatus);
 
     } catch (error) {
@@ -119,6 +146,17 @@ exports.deleteStatus = async (req, res) => {
         }
 
         await status.deleteOne();
+
+        //emit socket event
+        if (req.io && req.socketUserMap) {
+            //Broadcast to all connecting users except the creator
+            for (const [connectedUserId, socketId] of req.socketUserMap) {
+                if (connectedUserId !== userId) {
+                    req.io.to(socketId).emit("status_deleted", statusId)
+                }
+            }
+        }
+
         return response(res, 200, true, "Status deleted successfully");
 
     } catch (error) {
