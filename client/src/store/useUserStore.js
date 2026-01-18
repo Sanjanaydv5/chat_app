@@ -11,7 +11,7 @@ const useUserStore = create(
             cleanUser : () => set({ user:null, isAuthenticated:false }),
         }),
         {
-            name:"login-storage",
+            name:"user-storage",
             getStorage: () => localStorage
         }
     )
