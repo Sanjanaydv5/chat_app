@@ -145,7 +145,7 @@ const Login = () => {
         : 'bg-white text-gray-900'
     }`}
   >
-    <div className="flex justify-end mb-4">
+    {/* <div className="flex justify-end mb-4">
       <button
         onClick={toggleTheme}
         className={`p-2 rounded-full ${
@@ -168,7 +168,16 @@ const Login = () => {
       }`}
     >
       Welcome back 👋
-    </p>
+    </p> */}
+
+     <motion.div
+    initial={{ scale:0 }}
+    animate={{ scale:1 }}
+    transition={{ duration: 0.2, type:'spring',stiffness:260,damping:20 }}
+    className='w-24 h-24 bg-green-500 rounded-full mx-auto mb-6 flex items-center justify-center'
+  >
+
+  </motion.div>
   </motion.div>
 </div>
 
