@@ -98,6 +98,8 @@ const Login = () => {
   const [selectedAvatar, setSelectedAvatar] = useState(avatars[0]);
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [error, setError] = useState('');
+ const [showDropdown, setShowDropdown] = useState(false);
+ const [searchTerm, setSearchTerm] = useState("");
 
   /* =======================
      Forms
@@ -128,6 +130,13 @@ const Login = () => {
     resolver: yupResolver(profileValidationSchema)
   });
 
+
+  //for country dropdown
+  const filterCountries = countries.filter(
+    (country) =>
+      country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      country.dialCode.includes(searchTerm)
+  )
 
   const ProgressBar = () =>(
     <div className={`w-full ${theme ==='dark' ? "bg-gray-700" : "bg-gray-200"} rounded-full h-2.5 mb-6`}>
@@ -203,13 +212,21 @@ const Login = () => {
       <div className='relative'>
         <div className='flex'>
           <div className='relative w-1/3'>
-            <button type='button' className={`flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center ${theme === 'dark' ? 'text-white bg-gray-700' : 'text-gray-900 bg-gray-100 border-gray-300'} border rounded-s-lg hover:bg-gray-200 focus:outline-none focus:ring-gray-100`}>
+            <button type='button' className={`flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center ${theme === 'dark' ? 'text-white bg-gray-700' : 'text-gray-900 bg-gray-100 border-gray-300'} border rounded-s-lg hover:bg-gray-200 focus:outline-none focus:ring-gray-100`}
+            onClick={() => setShowDropdown} >
               <span>
                 {/* {selectedCountry.flag}  */}
                 {selectedCountry.alpha2} {selectedCountry.dialCode} 
               </span>
               <FaChevronDown className='ml-2'/>
             </button>
+            {showDropdown && (
+              <div className={`absolute z-10 w-full mt-1 ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}border rounded-md shadow-lg max-h-60 overflow-auto`}>
+               <div className={`sticky top-0 ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} p-2`}>
+                <input type='text' placeholder='search countries...'/>
+               </div>
+                </div>
+            )}
           </div>
         </div>
       </div>
