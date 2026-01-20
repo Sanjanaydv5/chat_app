@@ -1,4 +1,5 @@
 const countries = [
+    { dialCode: "+977", flag: "NE", alpha2: "NE", name: "Nepal" },
     { dialCode: "+91", flag: "🇮🇳", alpha2: "IN", name: "India" },
     { dialCode: "+7", flag: "🇷🇺", alpha2: "RU", name: "Russia" },
     { dialCode: "+7", flag: "🇰🇿", alpha2: "KZ", name: "Kazakhstan" },

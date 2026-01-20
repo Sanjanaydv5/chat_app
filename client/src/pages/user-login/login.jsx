@@ -132,11 +132,15 @@ const Login = () => {
 
 
   //for country dropdown
-  const filterCountries = countries.filter(
-    (country) =>
-      country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      country.dialCode.includes(searchTerm)
-  )
+const filteredCountries = countries.filter((country) => {
+  const name = country?.name ?? "";
+  const dialCode = country?.dialCode ?? "";
+
+  return (
+    name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dialCode.includes(searchTerm)
+  );
+});
 
   const ProgressBar = () =>(
     <div className={`w-full ${theme ==='dark' ? "bg-gray-700" : "bg-gray-200"} rounded-full h-2.5 mb-6`}>
@@ -213,7 +217,7 @@ const Login = () => {
         <div className='flex'>
           <div className='relative w-1/3'>
             <button type='button' className={`flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center ${theme === 'dark' ? 'text-white bg-gray-700' : 'text-gray-900 bg-gray-100 border-gray-300'} border rounded-s-lg hover:bg-gray-200 focus:outline-none focus:ring-gray-100`}
-            onClick={() => setShowDropdown} >
+             onClick={() => setShowDropdown(prev => !prev)} >
               <span>
                 {/* {selectedCountry.flag}  */}
                 {selectedCountry.alpha2} {selectedCountry.dialCode} 
@@ -221,12 +225,32 @@ const Login = () => {
               <FaChevronDown className='ml-2'/>
             </button>
             {showDropdown && (
-              <div className={`absolute z-10 w-full mt-1 ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}border rounded-md shadow-lg max-h-60 overflow-auto`}>
-               <div className={`sticky top-0 ${theme === 'dark' ? 'bg-gray-700' : 'bg-white'} p-2`}>
-                <input type='text' placeholder='search countries...'/>
-               </div>
-                </div>
-            )}
+  <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-auto">
+    <div className="sticky top-0 bg-white p-2">
+      <input
+        type="text"
+        placeholder="Search countries..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className={`w-full px-2 py-1 border ${theme === 'dark' ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300'} rounded-md text-sm focus:outline-none focus:ring-green-500 `}
+      />
+    </div>
+    {filteredCountries.map((country) => (
+      <button
+      key={country.alpha2}
+      type='button'
+      className={`w-full text-left px-3 py-2 ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100'} focus:outline-none focus:bg-gray-100`} 
+      onClick={() => {
+        setSelectedCountry(country)
+        setShowDropdown(false)
+      }} >
+        {country.flag} {(country.dialCode)} {country.name}
+      </button>
+    )
+  )}
+  </div>
+)}
+
           </div>
         </div>
       </div>
