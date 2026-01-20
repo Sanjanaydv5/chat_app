@@ -10,7 +10,8 @@ import useThemeStore from '../../store/themeStore';
 import countries from '../../utils/countries';
 import { sendOtp, verifyOtp, updateUserProfile } from '../services/user.service';
 import {motion} from 'framer-motion';
-
+import { FaChevronDown, FaWhatsapp } from 'react-icons/fa';
+import ProgressBar from 'react-bootstrap/ProgressBar';
 /* =======================
    Validation Schemas
 ======================= */
@@ -127,6 +128,16 @@ const Login = () => {
     resolver: yupResolver(profileValidationSchema)
   });
 
+
+  const ProgressBar = () =>(
+    <div className={`w-full ${theme ==='dark' ? "bg-gray-700" : "bg-gray-200"} rounded-full h-2.5 mb-6`}>
+      <div className='bg-green-500 h-2.5 rounded-full transition-all duration-500 ease-in-out'
+      style={{width: `${(step/3) * 100}%`}}>
+
+      </div>
+    </div>
+  )
+
   return (
     <div
   className={`min-h-screen flex items-center justify-center p-4 overflow-hidden ${
@@ -139,9 +150,9 @@ const Login = () => {
     initial={{ opacity: 0, y: -50 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
-    className={`w-full max-w-md p-6 md:p-8 rounded-lg shadow-2xl ${
+    className={`p-6 md:p-8 rounded-lg shadow-2xlw-full max-w-md relative z-10 ${
       theme === 'dark'
-        ? 'bg-black text-white'
+        ? 'bg-gray-800 text-white'
         : 'bg-white text-gray-900'
     }`}
   >
@@ -176,8 +187,35 @@ const Login = () => {
     transition={{ duration: 0.2, type:'spring',stiffness:260,damping:20 }}
     className='w-24 h-24 bg-green-500 rounded-full mx-auto mb-6 flex items-center justify-center'
   >
-
+    <FaWhatsapp className="w-16 h-16 text-white"/>
   </motion.div>
+  <h1 className={`text-3xl font-bold text-center mb-6 ${theme === "dark" ? "text-white" : "text-gray-800"}`}>
+    Whatsapp Login
+      </h1>
+    <ProgressBar/>
+    {error && <p className='text-red-500 text-center mb-4'>{error}</p>}
+    
+  {step === 1 && (
+    <form action="" className='space-y-4'>
+      <p className={`text-center ${theme === "dark" ? "text-gray-300" : "text-gray-600"}mb-4`}>
+        Enter your phone number or email to receive an OTP
+      </p>
+      <div className='relative'>
+        <div className='flex'>
+          <div className='relative w-1/3'>
+            <button type='button' className={`flex-shrink-0 z-10 inline-flex items-center py-2.5 px-4 text-sm font-medium text-center ${theme === 'dark' ? 'text-white bg-gray-700' : 'text-gray-900 bg-gray-100 border-gray-300'} border rounded-s-lg hover:bg-gray-200 focus:outline-none focus:ring-gray-100`}>
+              <span>
+                {/* {selectedCountry.flag}  */}
+                {selectedCountry.alpha2} {selectedCountry.dialCode} 
+              </span>
+              <FaChevronDown className='ml-2'/>
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  )}
+
   </motion.div>
 </div>
 
