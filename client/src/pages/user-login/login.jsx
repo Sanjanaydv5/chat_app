@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import { FaChevronDown, FaUber, FaWhatsapp } from 'react-icons/fa';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Spinner from '../../utils/Spinner'
+import { ToastContainer, toast } from 'react-toastify';
 /* =======================
    Validation Schemas
 ======================= */
@@ -151,12 +152,105 @@ const Login = () => {
         if(email) {
           const response = await sendOtp(null,null,email);
           if(response.status === "success"){
-            
+            toast.info("OTP is send to your email");
+            setUserPhoneData({email});
+            setStep(2)
           }
+      } else {
+        const response = await sendOtp(phoneNumber, selectedCountry);
+          if(response.status === "success"){
+            toast.info("OTP is send to your phone number");
+            setUserPhoneData({phoneNumber,phoneSuffix:selectedCountry});
+            setStep(2)
       }
-    } catch (error) {
-
+    } 
+  }catch (error) {
+        console.log(error.message || "Failed to send OTP")
+    } finally{
+      setLoading(false)
     }
+  }
+
+  const onOtpSubmit = async() => {
+    try{
+      setLoading(true);
+      if(!userPhoneData){
+        throw new Error("Phone or email data is missing")
+      };
+      const otpString = otp.join("");
+      let response;
+      if(userPhoneData?.email){
+        response = await verifyOtp(null,null,otpString,userPhoneData.email)
+      }else{
+        response = await verifyOtp(userPhoneData.phoneNumber,userPhoneData.phoneSuffix.otpString)
+      }
+      if(response.status === 'success'){
+        toast.success("OTP verify successfully")
+        const user = response.data?.user;
+        if(user?.username && user?.profilePicture){
+          setUser(user);
+          toast.success("Welcome back to WhatsApp")
+          navigate('/');
+          resetLoginState();
+        }else{
+          setStep(3);
+        }
+      }
+    }catch(error) {
+        console.log(error);
+        setError(error.message || "Failed to verify OTP")
+    }finally{
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e) => {
+    const file = e.target.files(0);
+    if(file){
+      setProfilePicture(file);
+      setProfilePicture(URL.createObjectURL(file))
+    }
+  }
+//to update profile
+    const onProfileSubmit = async(data) => {
+    try{
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("username",data.username)
+      formData.append("agreed",data.agreed)
+      if(profilePictureFile) {
+        formData.append("media",profilePictureFile)
+      }else{
+        formData.append("profilePicture",selectedAvatar)
+      }
+        await updateUserProfile(formData);
+        toast.success("Welcome back to WhatsApp");
+        navigate('/')
+        resetLoginState();
+    } catch (error) {
+      console.log(error);
+      setError(error.message || "Failed to update user profile")
+    } finally{
+      setLoading(false)
+    }
+  }
+//for new or another otp
+  const handleOtpChange = (index,value) => {
+    const newOtp = [...otp];
+    newOtp[index] =value;
+    setOtp(newOtp);
+    setOtpValue("otp",newOtp.join(""));
+    if(value && index <5) {
+      document.getElementById(`otp-${index * 1}`).focus();
+    }
+  }
+
+// after user back from second step
+  const handleBack = () => {
+    setStep(1);
+    setUserPhoneData(null);
+    setOtp(["","","","","","",]);
+    setError("");
   }
 
   const ProgressBar = () => (
