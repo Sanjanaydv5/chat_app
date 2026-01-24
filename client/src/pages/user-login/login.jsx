@@ -189,38 +189,64 @@ const Login = () => {
       setLoading(false);
     }
   };
-  const onOtpSubmit = async () => {
-    try {
-      setLoading(true);
-      if (!userPhoneData) {
-        throw new Error("Phone or email data is missing")
-      };
-      const otpString = otp.join("");
-      let response;
-      if (userPhoneData?.email) {
-        response = await verifyOtp(null, null, userPhoneData.email, otpString)
-      } else {
-        response = await verifyOtp(userPhoneData.phoneNumber, userPhoneData.phoneSuffix, otpString)
-      }
-      if (response.status === 'success') {
-        toast.success("OTP verify successfully")
-        const user = response.data?.user;
-        if (user?.username && user?.profilePicture) {
-          setUser(user);
-          toast.success("Welcome back to WhatsApp")
-          navigate('/');
-          resetLoginState();
-        } else {
-          setStep(3);
-        }
-      }
-    } catch (error) {
-      console.log(error);
-      setError(error.message || "Failed to verify OTP")
-    } finally {
-      setLoading(false)
+
+
+const onOtpSubmit = async () => {
+  try {
+    setLoading(true);
+    setError("");
+
+    if (!userPhoneData) {
+      throw new Error("Phone or email data is missing");
     }
+
+    const otpString = otp.join("");
+
+    let response;
+
+    if (userPhoneData.email) {
+      // ✅ EMAIL LOGIN
+      response = await verifyOtp(
+        null,
+        null,
+        userPhoneData.email,
+        otpString
+      );
+    } else {
+      // ✅ PHONE LOGIN (THIS WAS BROKEN)
+      response = await verifyOtp(
+        userPhoneData.phoneNumber,
+        userPhoneData.phoneSuffix,
+        null,
+        otpString
+      );
+    }
+
+    if (response.status === "success") {
+      toast.success("OTP verified successfully");
+
+      const user = response.data?.user;
+
+      if (user?.username && user?.profilePicture) {
+        setUser(user);
+        navigate("/");
+        resetLoginState();
+      } else {
+        setStep(3);
+      }
+    }
+  } catch (error) {
+    console.error("OTP VERIFY ERROR:", error);
+    setError(
+      error?.response?.data?.message ||
+      error.message ||
+      "Failed to verify OTP"
+    );
+  } finally {
+    setLoading(false);
   }
+};
+
 
   const handleFileChange = (e) => {
     const file = e.target.files(0);
@@ -230,33 +256,33 @@ const Login = () => {
     }
   }
   //to update profile
-const onProfileSubmit = async (data) => {
-  try {
-    setLoading(true);
-    setError("");
+  const onProfileSubmit = async (data) => {
+    try {
+      setLoading(true);
+      setError("");
 
-    const payload = {
-      username: data.username,
-      agreed: true,
-      profilePicture: selectedAvatar, // avatar URL
-    };
+      const payload = {
+        username: data.username,
+        agreed: true,
+        profilePicture: selectedAvatar, // avatar URL
+      };
 
-    const response = await updateUserProfile(payload);
+      const response = await updateUserProfile(payload);
 
-    toast.success("Profile updated successfully");
-    navigate("/");
-    resetLoginState();
-  } catch (error) {
-    console.error("UPDATE PROFILE ERROR:", error?.response?.data);
+      toast.success("Profile updated successfully");
+      navigate("/");
+      resetLoginState();
+    } catch (error) {
+      console.error("UPDATE PROFILE ERROR:", error?.response?.data);
 
-    setError(
-      error?.response?.data?.message ||
-      "Failed to update user profile"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      setError(
+        error?.response?.data?.message ||
+        "Failed to update user profile"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   //for new or another otp box
   const handleOtpChange = (index, value) => {

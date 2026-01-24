@@ -13,14 +13,21 @@ export const sendOtp = async(phoneNumber,phoneSuffix,email) => {
 
 
 //verify otp
-export const verifyOtp = async(phoneNumber,phoneSuffix,email,otp) => {
-    try{
-        const response = await axiosInstance.post('/auth/verify-otp',{phoneNumber,phoneSuffix,email,otp});
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : error.message;
-    }
-}
+export const verifyOtp = async (
+  phoneNumber,
+  phoneSuffix,
+  email,
+  otp
+) => {
+  const res = await axiosInstance.post("/auth/verify-otp", {
+    phoneNumber,
+    phoneSuffix,
+    email,
+    otp,
+  });
+  return res.data;
+};
+
 
 
 //update profile
