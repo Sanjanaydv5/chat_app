@@ -15,7 +15,7 @@
     "body-parser": "^2.2.2",
     "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "mongodb": "^7.0.0",
     "mongoose": "^9.1.3",

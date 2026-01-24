@@ -146,31 +146,49 @@ const Login = () => {
   });
 
 // api
-  const onloginSubmit = async() => {
-    try{
-      setLoading(true);
-        if(email) {
-          const response = await sendOtp(null,null,email);
-          if(response.status === "success"){
-            toast.info("OTP is send to your email");
-            setUserPhoneData({email});
-            setStep(2)
-          }
-      } else {
-        const response = await sendOtp(phoneNumber, selectedCountry);
-          if(response.status === "success"){
-            toast.info("OTP is send to your phone number");
-            setUserPhoneData({phoneNumber,phoneSuffix:selectedCountry});
-            setStep(2)
-      }
-    } 
-  }catch (error) {
-        console.log(error.message || "Failed to send OTP")
-    } finally{
-      setLoading(false)
-    }
-  }
+const onLoginSubmit = async () => {
+  try {
+    setLoading(true);
+    setError(""); // Clear previous errors
 
+    let response;
+    if (email) {
+      // Sending OTP via Email
+      response = await sendOtp(null, null, email);
+    } else if (phoneNumber) {
+      // Sending OTP via Phone
+      response = await sendOtp(phoneNumber, selectedCountry.dialCode, null);
+    } else {
+      setError("Please enter an email or phone number.");
+      return;
+    }
+
+    if (response.status === "success") {
+      toast.info(`OTP sent to your ${email ? "email" : "phone number"}`);
+      
+      // Store relevant data for the verification step
+      setUserPhoneData(
+        email 
+          ? { email } 
+          : { phoneNumber, phoneSuffix: selectedCountry.dialCode }
+      );
+      
+      setStep(2);
+    }
+  } catch (error) {
+    console.error("Login Error:", error);
+    
+    // Improved error handling to capture backend messages
+    const errorMessage = typeof error === 'string' 
+      ? error 
+      : error?.message || "Failed to send OTP. Please try again.";
+      
+    setError(errorMessage);
+    toast.error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
   const onOtpSubmit = async() => {
     try{
       setLoading(true);
@@ -180,9 +198,9 @@ const Login = () => {
       const otpString = otp.join("");
       let response;
       if(userPhoneData?.email){
-        response = await verifyOtp(null,null,otpString,userPhoneData.email)
+        response = await verifyOtp(null,null,userPhoneData.email,otpString)
       }else{
-        response = await verifyOtp(userPhoneData.phoneNumber,userPhoneData.phoneSuffix.otpString)
+        response = await verifyOtp(userPhoneData.phoneNumber,userPhoneData.phoneSuffix,otpString)
       }
       if(response.status === 'success'){
         toast.success("OTP verify successfully")
@@ -234,14 +252,14 @@ const Login = () => {
       setLoading(false)
     }
   }
-//for new or another otp
+//for new or another otp box
   const handleOtpChange = (index,value) => {
     const newOtp = [...otp];
     newOtp[index] =value;
     setOtp(newOtp);
     setOtpValue("otp",newOtp.join(""));
     if(value && index <5) {
-      document.getElementById(`otp-${index * 1}`).focus();
+      document.getElementById(`otp-${index + 1}`).focus();
     }
   }
 
@@ -318,18 +336,18 @@ const Login = () => {
         {error && <p className='text-red-500 text-center mb-4'>{error}</p>}
 
         {step === 1 && (
-          <form action="" className='space-y-4' onSubmit={handleLoginSubmit(onloginSubmit)}>
+          <form className='space-y-4' onSubmit={handleLoginSubmit(onLoginSubmit)}>
             <p className={`text-center ${theme === "dark" ? "text-gray-300" : "text-gray-600"}mb-4`}>
-              Enter your phone number or email to receive an OTP
+              Enter your phone number to receive an OTP
             </p>
             <div className='relative'>
               <div className='flex'>
                 <div className='relative w-1/3'>
-                  <button type='button' className={`flex-shrink-0 z-10 inline-flex items-center py-2.5 px-2 text-sm font-medium text-center ${theme === 'dark' ? 'text-white bg-gray-700' : 'text-gray-900 bg-gray-100 border-gray-300'} border rounded-s-lg hover:bg-gray-200 focus:outline-none focus:ring-gray-100`}
+                  <button type='button' className={`flex-shrink-0 z-10 inline-flex items-center py-2.5 px-2 text-sm font-medium text-center ${theme === 'dark' ? 'text-white bg-gray-700' : 'text-gray-900 bg-gray-100 border-gray-300'} border rounded-s-lg hover:bg-gray-200 focus-ring-4 focus:outline-none focus:ring-gray-100`}
                     onClick={() => setShowDropdown(prev => !prev)} >
                     <span>
                       {/* {selectedCountry.flag}  */}
-                      {selectedCountry.alpha2} {selectedCountry.dialCode}
+                      {selectedCountry.flag} {selectedCountry.dialCode}
                     </span>
                     <FaChevronDown className='ml-2' />
                   </button>
@@ -346,7 +364,7 @@ const Login = () => {
                       </div>
                       {filteredCountries.map((country) => (
                         <button
-                          key={country.alpha2}
+                          key={country.flag}
                           type='button'
                           className={`w-full text-left px-3 py-2 ${theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-100'} focus:outline-none focus:bg-gray-100`}
                           onClick={() => {
