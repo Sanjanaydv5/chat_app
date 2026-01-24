@@ -11,21 +11,17 @@ const useLoginStore = create(
 
       setUserPhoneData: (data) =>
         set({
-          userPhoneData: data
+          userPhoneData: data,
         }),
 
       resetLoginState: () =>
         set({
           step: 1,
-          userPhoneData: null
-        })
+          userPhoneData: null,
+        }),
     }),
     {
       name: "login-storage",
-      partialize: (state) => ({
-        step: state.step,
-        userPhoneData: state.userPhoneData
-      })
     }
   )
 );
