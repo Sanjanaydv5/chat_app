@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { getAllUsers } from "../pages/services/user.service";
 
 const HomePage = () => {
-    const setSelectedContact = useLayoutStore(state => state.setSelectedContact);
+
     const [allUsers, setAllUsers] = useState([]);
     const getUer = async () => {
         try {
@@ -34,7 +34,7 @@ const HomePage = () => {
                 transition={{ duration: 0.5 }}
                 className="h-full"
             >
-                <ChatList contacts={allUsers} setSelectedContact={setSelectedContact} />
+                <ChatList contacts={allUsers} />
             </motion.div>
         </Layout>
     );
