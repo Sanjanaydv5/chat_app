@@ -11,5 +11,8 @@
   "workspaces": [
     "client",
     "server"
-  ]
+  ],
+  "dependencies": {
+    "multer": "^2.0.2"
+  }
 }
