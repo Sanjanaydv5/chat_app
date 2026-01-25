@@ -2,8 +2,30 @@ import React from "react";
 import { motion } from "framer-motion";
 import Layout from "./Layout";
 import ChatList from "../pages/chatSection/ChatList";
+import useLayoutStore from '../store/layoutStore';
+import { useState, useEffect } from "react";
+import { getAllUsers } from "../pages/services/user.service";
 
 const HomePage = () => {
+    const setSelectedContact = useLayoutStore(state => state.setSelectedContact);
+    const [allUsers, setAllUsers] = useState([]);
+    const getUer = async () => {
+        try {
+            const result = await getAllUsers();
+            if (result.status === "success") {
+                setAllUsers(result.data);
+            }
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        }
+    };
+
+    useEffect(() => {
+        getAllUsers();
+    }, []);
+
+    console.log("All Users:", allUsers);
+
     return (
         <Layout>
             <motion.div
@@ -12,7 +34,7 @@ const HomePage = () => {
                 transition={{ duration: 0.5 }}
                 className="h-full"
             >
-                <ChatList/>
+                <ChatList contacts={allUsers} setSelectedContact={setSelectedContact} />
             </motion.div>
         </Layout>
     );
