@@ -5,6 +5,7 @@ import useUserStore from "../../store/useUserStore";
 import { FaPlus, FaSearch } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { formatTimeStamp } from "../../utils/formatTimeStamp";
 
 const ChatList = ({ contacts }) => {
     const setSelectedContact = useLayoutStore(state => state.setSelectedContact);
@@ -52,12 +53,17 @@ const ChatList = ({ contacts }) => {
                         <div className="ml-3 flex-1">
                             <div className="flex justify-between items-baseline">
                                 <h2 className={`font-semibold ${theme === "dark" ? "text-white" : "text-black"}`}>{contact?.username}</h2>
-                            </div>
+                                {contact?.conversation && (
+                                    <span className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                                        {formatTimeStamp(contact?.conversation?.lastMessage?.createdAt)}
+                                    </span>
+                                )}</div>
                         </div>
-                    </motion.div>
-                ))}
-            </div>
-        </div>
+        </motion.div>
+    ))
+}
+            </div >
+        </div >
     );
 }
 export default ChatList;
