@@ -14,12 +14,16 @@ function App() {
   return (
     <>
       <ToastContainer position='top-right' autoClose={3000} />
-      <BrowserRouter>
+      <BrowserRouter
+  future={{
+    v7_relativeSplatPath: true,
+  }}
+>
         <Routes>
-          <Route element={<ProtectedRoute />}>
+          <Route element={<PublicRoute />}>
             <Route path="/user-login" element={<Login />} />
           </Route>
-          <Route element={<PublicRoute />}>
+          <Route element={<ProtectedRoute />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/user-profile" element={<UserDetails />} />
             <Route path="/status" element={<Status />} />

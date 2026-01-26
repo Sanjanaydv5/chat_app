@@ -191,65 +191,69 @@ const Login = () => {
   };
 
 
-const onOtpSubmit = async () => {
-  try {
-    setLoading(true);
-    setError("");
+  const onOtpSubmit = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-    if (!userPhoneData) {
-      throw new Error("Phone or email data is missing");
-    }
-
-    const otpString = otp.join("");
-
-    let response;
-
-    if (userPhoneData.email) {
-      // ✅ EMAIL LOGIN
-      response = await verifyOtp(
-        null,
-        null,
-        userPhoneData.email,
-        otpString
-      );
-    } else {
-      // ✅ PHONE LOGIN (THIS WAS BROKEN)
-      response = await verifyOtp(
-        userPhoneData.phoneNumber,
-        userPhoneData.phoneSuffix,
-        null,
-        otpString
-      );
-    }
-
-    if (response.status === "success") {
-      toast.success("OTP verified successfully");
-
-      const user = response.data?.user;
-
-      if (user?.username && user?.profilePicture) {
-        setUser(user);
-        navigate("/");
-        resetLoginState();
-      } else {
-        setStep(3);
+      if (!userPhoneData) {
+        throw new Error("Phone or email data is missing");
       }
+
+      const otpString = otp.join("");
+
+      let response;
+
+      if (userPhoneData.email) {
+        // ✅ EMAIL LOGIN
+        response = await verifyOtp(
+          null,
+          null,
+          userPhoneData.email,
+          otpString
+        );
+      } else {
+        // ✅ PHONE LOGIN (THIS WAS BROKEN)
+        response = await verifyOtp(
+          userPhoneData.phoneNumber,
+          userPhoneData.phoneSuffix,
+          null,
+          otpString
+        );
+      }
+
+      if (response.status === "success") {
+        toast.success("OTP verified successfully");
+
+        const user = response.data?.user;
+
+        if (user?.username && user?.profilePicture) {
+          // 🔐 SAVE AUTH STATE
+          localStorage.setItem("token", response.data.token);
+          setUser(user);
+
+          resetLoginState();
+          navigate("/", { replace: true });
+        } else {
+          setStep(3);
+        }
+      }
+    } catch (error) {
+      console.error("OTP VERIFY ERROR:", error);
+      setError(
+        error?.response?.data?.message ||
+        error.message ||
+        "Failed to verify OTP"
+      );
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("OTP VERIFY ERROR:", error);
-    setError(
-      error?.response?.data?.message ||
-      error.message ||
-      "Failed to verify OTP"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   const handleFileChange = (e) => {
-    const file = e.target.files(0);
+    const file = e.target.files[0];
+
     if (file) {
       setProfilePicture(file);
       setProfilePicture(URL.createObjectURL(file))
@@ -269,9 +273,15 @@ const onOtpSubmit = async () => {
 
       const response = await updateUserProfile(payload);
 
+      const updatedUser = response.data.user;
+
+      localStorage.setItem("token", response.data.token);
+      setUser(updatedUser);
+
       toast.success("Profile updated successfully");
-      navigate("/");
       resetLoginState();
+      navigate("/", { replace: true });
+
     } catch (error) {
       console.error("UPDATE PROFILE ERROR:", error?.response?.data);
 
@@ -291,8 +301,9 @@ const onOtpSubmit = async () => {
     setOtp(newOtp);
     setOtpValue("otp", newOtp.join(""));
     if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`).focus();
+      document.getElementById(`otp-${index + 1}`)?.focus();
     }
+
   }
 
   // after user back from second step

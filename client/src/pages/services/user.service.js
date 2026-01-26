@@ -1,79 +1,78 @@
-import axiosInstance from "./url.service"
+import axiosInstance from "./url.service";
 
-
-// send otp
-export const sendOtp = async(phoneNumber,phoneSuffix,email) => {
-    try{
-        const response = await axiosInstance.post('/auth/send-otp',{phoneNumber,phoneSuffix,email});
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : error.message;
-    }
-}
-
-
-//verify otp
-export const verifyOtp = async (
-  phoneNumber,
-  phoneSuffix,
-  email,
-  otp
-) => {
-  const res = await axiosInstance.post("/auth/verify-otp", {
-    phoneNumber,
-    phoneSuffix,
-    email,
-    otp,
-  });
-  return res.data;
+// ---------------- SEND OTP ----------------
+export const sendOtp = async (phoneNumber, phoneSuffix, email) => {
+  try {
+    const res = await axiosInstance.post("/auth/send-otp", {
+      phoneNumber,
+      phoneSuffix,
+      email,
+    });
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
 };
 
+// ---------------- VERIFY OTP ----------------
+export const verifyOtp = async (phoneNumber, phoneSuffix, email, otp) => {
+  try {
+    const res = await axiosInstance.post("/auth/verify-otp", {
+      phoneNumber,
+      phoneSuffix,
+      email,
+      otp,
+    });
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
 
+// ---------------- UPDATE PROFILE ----------------
+export const updateUserProfile = async (updateData) => {
+  try {
+    const res = await axiosInstance.put("/auth/update-profile", updateData);
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
 
-//update profile
-export const updateUserProfile = async(updateData) => {
-    try{
-        const response = await axiosInstance.put('/auth/update-profile',updateData);
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : error.message;
+// ---------------- CHECK AUTH ----------------
+export const checkUserAuth = async () => {
+  try {
+    const res = await axiosInstance.get("/auth/check-authenticated");
+
+    if (res.data?.success) {
+      return {
+        isAuthenticated: true,
+        user: res.data.data,
+      };
     }
-}
 
+    return { isAuthenticated: false };
+  } catch (error) {
+    return { isAuthenticated: false };
+  }
+};
 
-//check authorization
-export const checkUserAuth = async() => {
-    try{
-        const response = await axiosInstance.get('/auth/check-authenticated');
-        if(response.data.status === 'success') {
-            return {isAuthenticated:true, user:response?.data?.data}
-        } else if(response.data.status === "error"){
-            return {isAuthenticated:false}
-        }
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : error.message;
-    }
-}
+// ---------------- LOGOUT ----------------
+export const logoutUser = async () => {
+  try {
+    const res = await axiosInstance.get("/auth/logout");
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
 
-
-//logout user
-export const logoutUser = async() => {
-    try{
-        const response = await axiosInstance.get('/auth/logout');
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : error.message;
-    }
-}
-
-
-//get user
-export const getAllUsers = async() => {
-    try{
-        const response = await axiosInstance.get('/auth/users');
-        return response.data;
-    } catch (error) {
-        throw error.response ? error.response.data : error.message;
-    }
-}
+// ---------------- GET ALL USERS ----------------
+export const getAllUsers = async () => {
+  try {
+    const res = await axiosInstance.get("/auth/users");
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};

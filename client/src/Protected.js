@@ -5,47 +5,49 @@ import useUserStore from "./store/useUserStore";
 import { checkUserAuth } from "./pages/services/user.service";
 import Loader from "./utils/Loader";
 
-
 export const ProtectedRoute = () => {
-    const location = useLocation();
-    const [isChecking, setIsChecking] = useState(true);
-    const {isAuthenticated, setUser, clearUser} = useUserStore();
+  const location = useLocation();
+  const { isAuthenticated, setUser, clearUser } = useUserStore();
+  const [isChecking, setIsChecking] = useState(false);
 
-    useEffect(() => {
-        const verifyAuth = async () => {
-            try {
-                const result = await checkUserAuth();
-                if (result?.authenticated) {
-                    setUser(result.user);
-                } else {
-                    clearUser();
-                }
-            } catch (error) {
-                console.error("Error verifying authentication:", error);
-                clearUser();
-            } finally {
-                setIsChecking(false);
-            }
-        };
-        verifyAuth();
-    }, [setUser, clearUser]);
-    if (isChecking) {
-        return <Loader />;
-    }
+  useEffect(() => {
+    if (isAuthenticated) return; // 🔑 STOP RECHECK
 
-    if (!isAuthenticated) {
-        return <Navigate to="/user-login" state={{ from: location }} replace />;
-    }
+    const verifyAuth = async () => {
+      setIsChecking(true);
+      try {
+        const result = await checkUserAuth();
+        if (result?.authenticated) {
+          setUser(result.user);
+        } else {
+          clearUser();
+        }
+      } catch {
+        clearUser();
+      } finally {
+        setIsChecking(false);
+      }
+    };
 
-    //user is authenticated, render the protected content
-    return <Outlet />;
-}
+    verifyAuth();
+  }, [isAuthenticated, setUser, clearUser]);
+
+  if (isChecking) return <Loader />;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/user-login" state={{ from: location }} replace />;
+  }
+
+  return <Outlet />;
+};
 
 
 export const PublicRoute = () => {
-    const {isAuthenticated} = useUserStore(state => state.isAuthenticated);
+    const isAuthenticated = useUserStore(state => state.isAuthenticated);
+
     if (isAuthenticated) {
-        return <Navigate to="/"  replace />;
+        return <Navigate to="/" replace />;
     }
+
     return <Outlet />;
-}
+};
