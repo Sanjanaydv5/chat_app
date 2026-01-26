@@ -98,20 +98,28 @@ const Sidebar = () => {
       {/* BOTTOM */}
       <div className={`${isMobile ? "flex gap-6" : "flex flex-col gap-8"}`}>
         <NavItem
-          to="/user-profile"
-          tab="profile"
-          icon={
-            user?.profilePicture ? (
-              <img
-                src={user?.profilePicture}
-                alt="profile"
-                className="h-7 w-7 rounded-full object-cover"
-              />
-            ) : (
-              <FaUserCircle className="h-6 w-6 text-gray-500" />
-            )
-          }
+  to="/user-profile"
+  tab="profile"
+  icon={
+    <div className="flex items-center justify-center w-8 h-8 overflow-hidden rounded-full ring-2 ring-transparent hover:ring-green-400 transition-all">
+      {user?.profilePicture ? (
+        <img
+          src={user.profilePicture}
+          alt="Profile"
+          className="h-full w-full object-cover"
+          // If the image link is broken, hide it so the fallback can show
+          onError={(e) => { e.target.style.display = 'none'; }}
         />
+      ) : (
+        <img
+          src={`https://ui-avatars.com/api/?name=${user?.username || 'User'}&background=random&color=fff`}
+          alt="Avatar"
+          className="h-full w-full object-cover"
+        />
+      )}
+    </div>
+  }
+/>
 
         <NavItem
           to="/setting"
