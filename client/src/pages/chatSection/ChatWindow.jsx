@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useThemeStore } from "../../stores/themeStore";
-import { useUserStore } from "../../stores/userStore";
-import { useChatStore } from "../../stores/chatStore";
-import { set } from "mongoose";
+import useThemeStore from "../../store/themeStore";
+import useUserStore from "../../store/useUserStore";
+import {chatStore} from "../../store/chatStore";
+import {isToday,isYesterday,format} from 'date-fns';
 
 const isValidate = (date) => {
     return date instanceof Date && !isNaN(date);
@@ -21,7 +21,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     const { theme } = useThemeStore();
     const { user } = useUserStore();
 
-    const { messages, loading, sendMessage, receiveMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping, stopTyping, getUserLastSeen, isUserOnline, cleanup, addReaction, deleteMessage } = useChatStore();
+    const { messages, loading, sendMessage, receiveMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping, stopTyping, getUserLastSeen, isUserOnline, cleanup, addReaction, deleteMessage } = chatStore();
     //get online status of user and last seen
     const online = isUserOnline(selectedContact?._id);
     const lastSeen = getUserLastSeen(selectedContact?._id);
@@ -105,6 +105,56 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         } catch (error){
             console.error("failed to send message",error)
         }
+    }
+
+    const renderDateSeparator = (date) => {
+        if(!isValidate(date)){
+            return null;
+        }
+        let dateString;
+        if(isToday(date)){
+            dateString="Today"
+        } else if (isYesterday(date)){
+            dateString = "Yesterday"
+        } else {
+            dateString = format(date, "EEEE,MMMM,d")
+        }
+
+        return(
+            <div className="flex justify-center my-4">
+                <span className={`px-4 py-2 rounded-full text-sm ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'}`}>
+            {dateString}
+                </span>
+            </div>
+        )
+    }
+    // Group message
+    const groupMessages = Array.isArray(messages) ? messages.reduce((acc,message) => {
+        if(!message.createdAt) return acc;
+        const date = new Date(message.createdAt);
+        if(isValidate(date)){
+            const dateString = format(date, "yyyy-mm-dd");
+            if(!acc[dateString]){
+                acc[dateString] = [];
+            }
+            acc[dateString].push(message);
+        } else {
+            console.error("Invalid date for message",message)
+        }
+        return acc;
+    },{}) : {};
+
+    const handleReaction = (messageId,emoji) => {
+        addReaction(messageId,emoji)
+    }
+    console.log("haha",selectedContact)
+
+    if(!selectedContact){
+        return (
+            <div className="">
+                sacwdc
+            </div>
+        )
     }
 
 return (

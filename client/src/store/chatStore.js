@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { getSocket } from '../services/chat.service';
-import { axiosInstance } from '../services/chat.service';
+import { getSocket } from "../pages/services/chat.service";
+import  axiosInstance  from "../pages/services/url.service";
+
 
 export const chatStore = create((set, get) => ({
     conversations: [],
