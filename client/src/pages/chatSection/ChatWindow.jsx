@@ -3,6 +3,9 @@ import useThemeStore from "../../store/themeStore";
 import useUserStore from "../../store/useUserStore";
 import {chatStore} from "../../store/chatStore";
 import {isToday,isYesterday,format} from 'date-fns';
+import whatsappImage from '../../images/whatsapp_image.png'
+// Import from the 'fa' (Font Awesome) sub-directory
+import { FaLock } from 'react-icons/fa';
 
 const isValidate = (date) => {
     return date instanceof Date && !isNaN(date);
@@ -149,10 +152,23 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     }
     console.log("haha",selectedContact)
 
-    if(!selectedContact){
+    if(selectedContact){
         return (
-            <div className="">
-                sacwdc
+            <div className="flex-1 flex flex-col items-center justufy-cwnter mx-auto h-screen text-center">
+                <div className="max-w-md">
+                <img src={whatsappImage} alt="chat_app"
+                className="w-full h-auto" />
+                <h2 className={`text-3xl font-semibold mb-4 ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                select a conversation to start chatting
+                </h2>
+                <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}mb-6`}>
+                    Choose a contact from the list
+                </p>
+                <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm mt-8 flex items-center justify-center gap-2 `}>
+                    <FaLock className="h-4 w-4"/>
+                    Your personal messages are end-to-end encrypted
+                </p>
+                </div>
             </div>
         )
     }
