@@ -149,7 +149,10 @@ export const chatStore = create((set, get) => ({
             });
 
             //mark messages as read
-            return data;
+            const {markMessagesAsRead} = get();
+            markMessagesAsRead();
+
+            return messageArray;
         } catch (error) {
             set({ error: error?.response?.data?.message || error?.message, loading: false });
             return [];
@@ -169,6 +172,11 @@ export const chatStore = create((set, get) => ({
             set((state) => ({
                 messages: [...state.messages, message]
             }));
+            //automatically mark messages as read
+            if (message.receiver?._id === currentUser?._id) {
+                const { markMessagesAsRead } = get();
+                markMessagesAsRead();
+            }
         }
 
         //update conversations preview and unread count
@@ -194,7 +202,7 @@ export const chatStore = create((set, get) => ({
             };
         });
 
-    }
+    },
     //mark messages as read
     markMessagesAsRead: async () => {
         const { currentUser, messages } = get();
@@ -207,12 +215,98 @@ export const chatStore = create((set, get) => ({
             const { data } = await axiosInstance.put('/chats/messages/read', {
                 messageIds: unreadIds
             });
+            console.log('Marked messages as read:', data);
             set((state) => ({
                 messages: state.messages.map((msg) =>
                     unreadIds.includes(msg._id) ? { ...msg, messageStatus: 'read' } : msg
                 )
             }));
+            const socket = getSocket();
+            if (socket) {
+                socket.emit('messages_read', { messageIds: unreadIds, senderId: messages[0].sender?._id });
+            }
             return data;
         } catch (error) {
             console.error('Error marking messages as read:', error);
+        }
+    },
+    deleteMessage: async(messageId) => {
+        try {
+            await axiosInstance.delete(`/chats/messages/${messageId}`);
+            set((state) => ({
+                messages: state.messages?.filter((msg) => msg?._id !== messageId)
+            }));
+            return true;
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            set({ error: error?.response?.data?.message || error?.message });
+            return false;
+        }
+    },
+    //add/change reaction on a message
+    addReaction: async (messageId, emoji) => {
+        const socket = getSocket();
+        const { currentUser } = get();
+        if(socket && currentUser) {
+            socket.emit('add_reaction', {
+                messageId,
+                emoji,
+                userId: currentUser?._id
+            });
+        }
+    },
+    //start typing indicator
+    startTyping: (receiverId) => {
+        const {currentConversation} = get();
+        const socket = getSocket();
+        if(socket && currentConversation && receiverId) {
+            socket.emit('typing_start', {
+                conversationId: currentConversation,
+                receiverId
+            });
+        }
+    },
+    //stop typing indicator
+    stopTyping: (receiverId) => {
+        const {currentConversation} = get();
+        const socket = getSocket();
+        if(socket && currentConversation && receiverId) {
+            socket.emit('typing_stop', {
+                conversationId: currentConversation,
+                receiverId
+            });
+        }
+    },
+    //is user typing in current conversation
+    isUserTyping: (userId) => {
+        const {currentConversation, typingUsers} = get();
+        if(!currentConversation || !typingUsers.has(currentConversation) || !userId) {
+            return false
+        };
+        return typingUsers.get(currentConversation).has(userId);
+    },
+    //get online status of a user
+    isUserOnline: (userId) => {
+        if(!userId) return null;
+        const {onlineUsers} = get();
+        return onlineUsers.get(userId)?.isOnline || false;
+    },
+    //get last seen of a user
+    getUserLastSeen: (userId) => {
+        if(!userId) return null;
+        const {onlineUsers} = get();
+        return onlineUsers.get(userId)?.lastSeen || null;
+    },
+    //clear chat store
+    clearChatStore: () => {
+        set({
+            conversations: [],
+            currentConversation: null,
+            messages: [],
+            loading: false,
+            error: null,
+            onlineUsers: new Map(),
+            typingUsers: new Map(),
+        });
+    }
 }));
