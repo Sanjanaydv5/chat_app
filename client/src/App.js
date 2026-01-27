@@ -9,7 +9,7 @@ import HomePage from './components/HomePage';
 import UserDetails from './components/UserDetails';
 import Setting from './pages/SettingSection/Setting';
 import Status from './pages/StatusSection/Status';
-import { useUserStore } from './stores/user.store';
+import useUserStore from "./store/useUserStore";
 import { useEffect } from 'react';
 import { initializeSocket, disconnectSocket } from './pages/services/chat.service';
 
