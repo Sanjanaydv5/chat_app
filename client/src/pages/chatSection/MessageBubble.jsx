@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { format } from 'date-fns';
 import { FaCheck, FaCheckDouble, FaPlus, FaRegCopy, FaSmile } from 'react-icons/fa';
 import { HiDotsVertical } from "react-icons/hi";
-import { useOutSideClick } from '../../hooks/useOutSideClick';
+import useOutSideClick from '../../hooks/useOutSideClick';
+
 import EmojiPicker from 'emoji-picker-react';
 import { RxCross2 } from 'react-icons/rx';
 
