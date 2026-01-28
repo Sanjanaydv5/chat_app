@@ -152,6 +152,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
 
     const handleReaction = (messageId, emoji) => {
         addReaction(messageId, emoji)
+        console.log(messageId,emoji)
     }
 
     if (!selectedContact) {
