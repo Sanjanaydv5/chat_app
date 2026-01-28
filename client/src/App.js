@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Login from './pages/user-login/login';
@@ -10,30 +10,40 @@ import UserDetails from './components/UserDetails';
 import Setting from './pages/SettingSection/Setting';
 import Status from './pages/StatusSection/Status';
 import useUserStore from "./store/useUserStore";
-import { useEffect } from 'react';
 import { initializeSocket, disconnectSocket } from './pages/services/chat.service';
+import { chatStore } from "./store/chatStore"
 
 function App() {
-  
-  const {user} = useUserStore();
+  const { user } = useUserStore();
+  const { setCurrentUser, initSocketListeners, cleanup } = chatStore();
+
   useEffect(() => {
-    if(user?._id){
+    if (user?._id) {
       const socket = initializeSocket();
+      if (socket) {
+        setCurrentUser(user);
+        initSocketListeners();
+      }
     }
 
+    // Cleanup function to run when component unmounts
     return () => {
+      if (typeof cleanup === 'function') {
+        cleanup();
+      }
       disconnectSocket();
-    }
-  }, [user]);
+    };
+    // Corrected dependency array from () to []
+  }, [user, setCurrentUser, initSocketListeners, cleanup]);
 
   return (
     <>
       <ToastContainer position='top-right' autoClose={3000} />
       <BrowserRouter
-  future={{
-    v7_relativeSplatPath: true,
-  }}
->
+        future={{
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route element={<PublicRoute />}>
             <Route path="/user-login" element={<Login />} />

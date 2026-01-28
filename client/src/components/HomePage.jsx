@@ -12,7 +12,6 @@ const HomePage = () => {
     const fetchUsers = async () => {
         try {
             const result = await getAllUsers();
-            console.log("Service Result:", result);
 
             // Dig into result.data.users based on your console log
             // In HomePage.jsx, make sure it's this:

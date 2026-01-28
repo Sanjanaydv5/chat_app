@@ -49,7 +49,7 @@ app.get("/", (req, res) => {
 
 // Use the correct variable name: authRoute
 app.use("/api/auth", authRoute); 
-app.use("/api/chat", chatRoute);
+app.use("/api/chats", chatRoute);
 app.use('/api/status', statusRoute);
 
 // 404 handler
