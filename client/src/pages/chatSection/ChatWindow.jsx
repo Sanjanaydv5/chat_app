@@ -71,7 +71,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 clearTimeout(typingTimeoutRef.current)
             }
         }
-    }, [ message, selectedContact, startTyping, stopTyping ])
+    }, { message, selectedContact, startTyping, stopTyping })
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -88,7 +88,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         if (!selectedContact) return;
         setFilePreview(null);
         try {
-            const formData = new FormData();
+            const formData = new formData();
             formData.append("senderId", user?._id)
             formData.append("receiverId", selectedContact?._id)
 
@@ -211,7 +211,9 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 {Object.entries(groupMessages).map(([date, msgs]) => (
                     <React.Fragment key={date}>
                         {renderDateSeparator(new Date(date))}
-                        {msgs.map((msg) => (
+                        {msgs.filter(
+                            (msg) => msg.conversation === selectedContact?.conversation?._id
+                        ).map((msg) => (
                             <MessageBubble
                                 key={msg._id || msg.tempId}
                                 message={msg}
