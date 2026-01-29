@@ -1,5 +1,5 @@
 import {io} from "socket.io-client";
-import useUserStore from "../../store/useUserStore";
+import useUserStore from "../store/useUserStore";
 
 
 let socket = null;
@@ -22,8 +22,8 @@ export const initializeSocket = () => {
     // Handle connection event
     socket.on("connect", () => {
         console.log("Connected to chat server", socket.id);
-        if (user && user.id) {
-            socket.emit("join", {userId: user.id});
+        if (user && user._id) {
+            socket.emit("user_connected", {userId: user._id});
         }
     });
 

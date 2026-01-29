@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import useThemeStore from "../../store/themeStore";
 import useUserStore from "../../store/useUserStore";
-import { logoutUser } from "../services/user.service";
+import { logoutUser } from "../../services/user.service";
 import { toast } from "react-toastify";
 import Layout from "../../components/Layout";
 import {

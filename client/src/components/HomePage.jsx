@@ -4,7 +4,7 @@ import Layout from "./Layout";
 import ChatList from "../pages/chatSection/ChatList";
 import useLayoutStore from '../store/layoutStore';
 import { useState, useEffect } from "react";
-import { getAllUsers } from "../pages/services/user.service";
+import { getAllUsers } from "../services/user.service";
 
 const HomePage = () => {
     const [allUsers, setAllUsers] = useState([]);

@@ -10,12 +10,12 @@ import UserDetails from './components/UserDetails';
 import Setting from './pages/SettingSection/Setting';
 import Status from './pages/StatusSection/Status';
 import useUserStore from "./store/useUserStore";
-import { initializeSocket, disconnectSocket } from './pages/services/chat.service';
-import { chatStore } from "./store/chatStore"
+import { initializeSocket, disconnectSocket } from './services/chat.service';
+import { useChatStore } from "./store/chatStore"
 
 function App() {
   const { user } = useUserStore();
-  const { setCurrentUser, initSocketListeners, cleanup } = chatStore();
+  const { setCurrentUser, initSocketListeners, cleanup } = useChatStore();
 
   useEffect(() => {
     if (user?._id) {
@@ -28,9 +28,7 @@ function App() {
 
     // Cleanup function to run when component unmounts
     return () => {
-      if (typeof cleanup === 'function') {
-        cleanup();
-      }
+      cleanup();
       disconnectSocket();
     };
     // Corrected dependency array from () to []

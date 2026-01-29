@@ -10,7 +10,7 @@ import { RxCross2 } from 'react-icons/rx';
 
 
 const MessageBubble = ({ message, theme, onReact, currentUser, deleteMessage, setMessage }) => {
-
+console.log("my msg",message)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showReactions, setShowReactions] = useState(false)
   const messageRef = useRef(null)
@@ -72,7 +72,7 @@ const MessageBubble = ({ message, theme, onReact, currentUser, deleteMessage, se
             <HiDotsVertical size={18} />
           </button>
         </div>
-        <div className={`absolute ${isUserMessage ? "-left-10" : "-right-10"} top=1/2 transform-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 `}>
+        <div className={`absolute ${isUserMessage ? "-left-10" : "-right-10"} top-1/2 transform-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 `}>
           <button
             onClick={() => setShowReactions(!showReactions)}
             className={`p-2 rounded-full ${theme === "dark" ? "bg-[#202c33] hover:bg-[#202c33" : "bg-white hover:bg-gray-100"}shadow-lg`}>

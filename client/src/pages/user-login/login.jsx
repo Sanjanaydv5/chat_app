@@ -8,7 +8,7 @@ import useLoginStore from '../../store/useLoginStore';
 import useUserStore from '../../store/useUserStore';
 import useThemeStore from '../../store/themeStore';
 import countries from '../../utils/countries';
-import { sendOtp, verifyOtp, updateUserProfile } from '../services/user.service';
+import { sendOtp, verifyOtp, updateUserProfile } from '../../services/user.service';
 import { motion } from 'framer-motion';
 import { FaArrowLeft, FaChevronDown, FaPlus, FaUber, FaUser, FaWhatsapp } from 'react-icons/fa';
 import ProgressBar from 'react-bootstrap/ProgressBar';

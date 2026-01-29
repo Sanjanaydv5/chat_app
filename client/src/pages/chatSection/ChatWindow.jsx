@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import useThemeStore from "../../store/themeStore";
 import useUserStore from "../../store/useUserStore";
-import { chatStore } from "../../store/chatStore";
+import { useChatStore } from "../../store/chatStore";
 import { isToday, isYesterday, format } from 'date-fns';
 import whatsappImage from '../../images/whatsapp_image.png'
 // Import from the 'fa' (Font Awesome) sub-directory
@@ -26,7 +26,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     const { theme } = useThemeStore();
     const { user } = useUserStore();
 
-    const { messages, loading, sendMessage, receiveMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping, stopTyping, getUserLastSeen, isUserOnline, cleanup, addReaction, deleteMessage } = chatStore();
+    const { messages, loading, sendMessage, receiveMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping, stopTyping, getUserLastSeen, isUserOnline, cleanup, addReaction, deleteMessage } = useChatStore();
     //get online status of user and last seen
     const online = isUserOnline(selectedContact?._id);
     const lastSeen = getUserLastSeen(selectedContact?._id);
@@ -71,7 +71,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 clearTimeout(typingTimeoutRef.current)
             }
         }
-    }, { message, selectedContact, startTyping, stopTyping })
+    }, [ message, selectedContact, startTyping, stopTyping ])
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -106,7 +106,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
             //clear state
             setMessage("");
             setFilePreview(null);
-            setSelectedContact(null);
+            setSelectedFile(null);
             setShowFileMenu(false);
         } catch (error) {
             console.error("failed to send message", error)
@@ -123,7 +123,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         } else if (isYesterday(date)) {
             dateString = "Yesterday"
         } else {
-            dateString = format(date, "EEEE,MMMM,d")
+            dateString = format(date, "EEEE,MMM,d")
         }
 
         return (
@@ -139,7 +139,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         if (!message.createdAt) return acc;
         const date = new Date(message.createdAt);
         if (isValidate(date)) {
-            const dateString = format(date, "yyyy-mm-dd");
+            const dateString = format(date, "yyyy-MM-dd");
             if (!acc[dateString]) {
                 acc[dateString] = [];
             }
@@ -157,7 +157,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
 
     if (!selectedContact) {
         return (
-            <div className="flex-1 flex flex-col items-center justufy-cwnter mx-auto h-screen text-center">
+            <div className="flex-1 flex flex-col items-center justufy-center mx-auto h-screen text-center">
                 <div className="max-w-md">
                     <img src={whatsappImage} alt="chat_app"
                         className="w-full h-auto" />
@@ -194,7 +194,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                         <div>Typing...</div>
                     ) : (
                         <p className={`text-sm ${theme === 'dark' ? "text-gray-400" : "text-gray-500"}`}>
-                            {online ? "Online" : lastSeen ? 'Last Seen ${format(new Date (lastSeen), "HH:mm")}' : "Offline"}
+                            {online ? "Online" : lastSeen ? `Last Seen ${format(new Date (lastSeen), "HH:mm")}` : "Offline"}
                         </p>
                     )}
                 </div>
@@ -211,9 +211,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 {Object.entries(groupMessages).map(([date, msgs]) => (
                     <React.Fragment key={date}>
                         {renderDateSeparator(new Date(date))}
-                        {msgs.filter(
-                            (msg) => msg.conversation === selectedContact?.conversation?._id
-                        ).map((msg) => (
+                        {msgs.map((msg) => (
                             <MessageBubble
                                 key={msg._id || msg.tempId}
                                 message={msg}
@@ -291,7 +289,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                     }
                 }}
                 placeholder="Type a message"
-                className={`flex-grow px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focu:ring-green-500
+                className={`flex-grow px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500
                 ${theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"}`} />
                 <button onClick={handleSendMessage} className="focus:outline-none">
                     <FaPaperPlane className="h-6 w-6 text-green-500"/>

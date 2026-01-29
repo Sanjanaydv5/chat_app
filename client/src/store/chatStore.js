@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { getSocket } from "../pages/services/chat.service";
-import  axiosInstance  from "../pages/services/url.service";
+import { getSocket } from "../services/chat.service";
+import  axiosInstance  from "../services/url.service";
 
 
-export const chatStore = create((set, get) => ({
+export const useChatStore = create((set, get) => ({
     conversations: [],
     currentConversation: null,
     messages: [],
@@ -186,7 +186,9 @@ export const chatStore = create((set, get) => ({
             receiver: { _id: receiverId },
             conversation: conversationId,
             imageOrVideoUrl: media && typeof media !== 'string' ? URL.createObjectURL(media) : null,
-            createdAt: new Date().toISOString(),
+            content:content,
+            contentType : media ? media.type.startsWith("image") ? "image" : "video" : "text",
+            createdAt : new Date().toISOString(),
             messageStatus,
         };
         set((state) => ({
@@ -232,7 +234,7 @@ export const chatStore = create((set, get) => ({
         //update conversations preview and unread count
         set((state) => {
             const updatedConversations = state.conversations?.data?.map((conv) => {
-                if (conv._id === message.conversationId) {
+                if (conv._id === message.conversation) {
                     return {
                         ...conv,
                         lastMessage: message,
@@ -348,7 +350,7 @@ export const chatStore = create((set, get) => ({
         return onlineUsers.get(userId)?.lastSeen || null;
     },
     //clear chat store
-    clearChatStore: () => {
+    cleanup: () => {
         set({
             conversations: [],
             currentConversation: null,
