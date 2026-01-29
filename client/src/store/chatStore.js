@@ -23,7 +23,7 @@ export const useChatStore = create((set, get) => ({
         socket.off('receive_message');
         socket.off('user_typing');
         socket.off('user_status');
-        socket.off('message_send');
+        socket.off('send_message');
         socket.off('message_error');
         socket.off('message_delete');
 
@@ -127,6 +127,7 @@ export const useChatStore = create((set, get) => ({
         try {
             const { data } = await axiosInstance.get('/chats/conversations');
             set({ conversations: data, loading: false });
+
             get().initsocketListeners();
             return data;
         } catch (error) {
@@ -166,7 +167,6 @@ export const useChatStore = create((set, get) => ({
         const media = formData.get("media");
         const content = formData.get("content");
         const messageStatus = formData.get("messageStatus");
-        const socket = getSocket();
         const { conversations } = get();
         let conversationId = null;
         if (conversations?.data?.length > 0) {
@@ -192,8 +192,8 @@ export const useChatStore = create((set, get) => ({
             messageStatus,
         };
         set((state) => ({
-            message: [...state.messages, optimisticMessage]
-        }));
+    messages: [...state.messages, optimisticMessage]
+}));
         try {
             const { data } = await axiosInstance.post("/chats/send-message", formData,
                 { headers: { "Content-Type": "multipart/form-data" } }
@@ -217,8 +217,9 @@ export const useChatStore = create((set, get) => ({
     },
     receiveMessage: (message) => {
         if (!message) return;
-        const { currentConversation, currentUser, messages } = get();
-        const messageExists = message.some((msg) => msg._id === message._id);
+        const { currentConversation, currentUser } = get();
+        const { messages } = get();
+        const messageExists = messages.some((msg) => msg._id === message._id);
         if (messageExists) return;
         if (message.conversation === currentConversation) {
             set((state) => ({

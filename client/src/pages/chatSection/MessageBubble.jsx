@@ -1,163 +1,224 @@
 import React, { useState, useRef } from 'react';
 import { format } from 'date-fns';
-import { FaCheck, FaCheckDouble, FaPlus, FaRegCopy, FaSmile } from 'react-icons/fa';
-import { HiDotsVertical } from "react-icons/hi";
+import {
+  FaCheck,
+  FaCheckDouble,
+  FaPlus,
+  FaRegCopy,
+  FaSmile,
+  FaTrashAlt,
+  FaChevronDown
+} from 'react-icons/fa';
+import { RxCross2 } from 'react-icons/rx';
+import EmojiPicker from 'emoji-picker-react';
 import useOutSideClick from '../../hooks/useOutSideClick';
 
-import EmojiPicker from 'emoji-picker-react';
-import { RxCross2 } from 'react-icons/rx';
+const MessageBubble = ({ message, theme, onReact, currentUser, deleteMessage }) => {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showReactions, setShowReactions] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
-
-
-const MessageBubble = ({ message, theme, onReact, currentUser, deleteMessage, setMessage }) => {
-console.log("my msg",message)
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [showReactions, setShowReactions] = useState(false)
-  const messageRef = useRef(null)
-  const [showOptions, setShowOptions] = useState(false)
   const optionRef = useRef(null);
-  const emojiPickerRef = useRef(null)
-  const reactionsMenuRef = useRef(null)
-  const isUserMessage = message.sender._id === currentUser?._id
-  const bubbleClass = isUserMessage ? "chat-read" : "chat-start"
-  const bubbleCotentClass = isUserMessage ? `chat-bubble md:max-w-[50%] min-w-[130px] ${theme === "dark" ? "bg-[#144d38] text-white" : "bg-[#d9fdd3] text-black"}` :
-    `chat-bubble md:max-w-[50%] min-w-[130px] ${theme === "dark" ? "bg-[#144d38] text-white" : "bg-[#d9fdd3] text-black"}`;
+  const emojiPickerRef = useRef(null);
+  const reactionsMenuRef = useRef(null);
+
+  const isUserMessage = message.sender?._id === currentUser?._id;
+  const isDark = theme === "dark";
+
+  const bubbleBg = isUserMessage
+    ? (isDark ? "bg-[#005c4b]" : "bg-[#d9fdd3]")
+    : (isDark ? "bg-[#202c33]" : "bg-white");
+
+  const textColor = isDark ? "text-[#e9edef]" : "text-[#111b21]";
   const quickReactions = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
-  const handleReact = (emoji) => {
-    onReact(message._id, emoji)
-    setShowEmojiPicker(false)
-    setShowReactions(false)
+
+  const closeAllPopups = () => {
+    setShowOptions(false);
+    setShowReactions(false);
+    setShowEmojiPicker(false);
   };
 
-  useOutSideClick(emojiPickerRef, () => {
-    if (showEmojiPicker) setShowEmojiPicker(false);
-  })
-  useOutSideClick(reactionsMenuRef, () => {
-    if (showReactions) setShowReactions(false);
-  })
-  useOutSideClick(optionRef, () => {
-    if (showOptions) setShowOptions(false);
-  })
+  const handleReact = (emoji) => {
+    onReact(message._id, emoji);
+    closeAllPopups();
+  };
 
-  if (message === 0) return;
+  useOutSideClick(optionRef, closeAllPopups);
+  useOutSideClick(reactionsMenuRef, () => setShowReactions(false));
+  useOutSideClick(emojiPickerRef, () => setShowEmojiPicker(false));
+
+  if (!message) return null;
+
+  // Group reactions (WhatsApp style)
+  const groupedReactions = Object.values(
+    (message.reactions || []).reduce((acc, r) => {
+      acc[r.emoji] = acc[r.emoji]
+        ? { ...acc[r.emoji], count: acc[r.emoji].count + 1 }
+        : { emoji: r.emoji, count: 1 };
+      return acc;
+    }, {})
+  );
+
   return (
-    <div className={`chat ${bubbleClass}`}>
-      <div className={`${bubbleCotentClass} relative group`}
-        ref={messageRef}>
-        <div className='flex justify-center gap-2'>
-          {message.contentType === "text" && <p className='mr-2'>{message.content}</p>}
-          {message.contentType === "image" && (
-            <div>
-              <img src={message.imageOrVideoUrl}
-                alt='image/video'
-                className='rounded-lg max-w-xs' />
-              <p className='mt-1'>{message.content}</p>
-            </div>
-          )}
-        </div>
-        <div className='self-end flex items-center justify-end gap-1 text-sm opacity-60 mt-2 ml-2'>
-          <span>{format(new Date(message.createdAt), "HH:mm")}</span>
-          {isUserMessage && (
-            <>
-              {message.messageStatus === "send" && <FaCheck size={12} />}
-              {message.messageStatus === "delivered" && <FaCheckDouble size={12} />}
-              {message.messageStatus === "read" && <FaCheckDouble size={12} className='text-blue-900' />}
-            </>
-          )}
+    <div className={`flex w-full mb-1 px-[5%] ${isUserMessage ? "justify-end" : "justify-start"}`}>
+      <div className="relative group max-w-[85%] md:max-w-[65%] lg:max-w-[50%]">
 
-        </div>
-        <div className='absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20'>
-          <button onClick={() => setShowOptions((prev) => !prev)}
-            className={`rounded-full p-1 ${theme === "dark" ? "text-white" : "text-gray-800"}`}>
-            <HiDotsVertical size={18} />
-          </button>
-        </div>
-        <div className={`absolute ${isUserMessage ? "-left-10" : "-right-10"} top-1/2 transform-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2 `}>
-          <button
-            onClick={() => setShowReactions(!showReactions)}
-            className={`p-2 rounded-full ${theme === "dark" ? "bg-[#202c33] hover:bg-[#202c33" : "bg-white hover:bg-gray-100"}shadow-lg`}>
-            <FaSmile className={`${theme === "dark" ? "text-gray-300" : "text-gray-600"}`} />
-          </button>
-        </div>
+        {/* Quick Reactions Popup */}
         {showReactions && (
-          <div ref={reactionsMenuRef}
-            className={`absolute -top-8 ${isUserMessage ? "left-0" : "left-36"} transform =translate-1/2 flex items-center hover:bg-[#202c33]/90 rounded-full px-2 py-1.5 gap-1 shadow-lg z-50`}>
-            {quickReactions.map((emoji, index) => (
+          <div
+            ref={reactionsMenuRef}
+            className={`absolute -top-12 ${isUserMessage ? "right-0" : "left-0"}
+            flex items-center gap-1 px-2 py-1 rounded-full shadow-xl z-50
+            ${isDark ? "bg-[#233138]" : "bg-white"}`}
+          >
+            {quickReactions.map((emoji, i) => (
               <button
-                key={index}
+                key={i}
                 onClick={() => handleReact(emoji)}
-                className='hover:scale-125 transition-transform p-1'>
+                className="text-xl hover:scale-150 transition-transform p-1"
+              >
                 {emoji}
               </button>
             ))}
-            <div className='w-[1px] h-5 bg-gray-600 mx-1'>
-              <button
-                className='hover:bg-[#ffffff1a] rounded-full p-1'
-                onClick={() => setShowEmojiPicker(true)}>
-                <FaPlus className='h-4 w-4 text-gray-300' />
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                setShowEmojiPicker(true);
+                setShowReactions(false);
+              }}
+              className="p-2 rounded-full hover:bg-black/10 text-gray-400"
+            >
+              <FaPlus size={12} />
+            </button>
           </div>
         )}
-        {showEmojiPicker && (
-          <div ref={emojiPickerRef}
-            className='absolute left-0 mb-6 z-50'>
-            <div className='relative'>
-              <EmojiPicker
-                onEmojiClick={(emojiObject) => {
-                  handleReact(emojiObject.emoji);
-                }}
-                theme={theme} />
-              <button
-                onClick={() => setShowEmojiPicker(false)}
-                className='absolute top-2 right-2 text-gray-500 hover:text-gra-700'>
-                <RxCross2 />
-              </button>
-            </div>
-          </div>
-        )}
-        {message.reactions && message.reactions.length > 0 && (
-          <div className={`absolute -bottom-5 ${isUserMessage ? "right-2" : "left-3"} ${theme === "dark" ? "bg-[#2a3942]" : "bg-gray-200"} rounded-full px-2 shadow-md`}>
 
+        {/* Message Bubble */}
+        <div className={`${bubbleBg} ${textColor} rounded-lg shadow-sm relative pl-3 pr-2 py-1.5 min-w-[80px]`}>
 
-
-            {message.reactions.map((reaction, index) => (
-              <span
-                key={index} className='mr-1'
-              >{reaction.emoji}</span>
-            ))}
-          </div>
-        )}
-        {showOptions &&(
-          <div ref={optionRef} 
-          className={`absolute top-8 right-1 z-50 w-36 rounded-xl shadow-lg py-2 text-sm ${theme === "dark" ? "bg-[#1d1f1f text-white" : "bg-gray-100 text-black"}`}>
-            <button onClick={() => {
-              if(message.contentType === "text"){
-                navigator.clipboard.writeText(message.content)
-              }
-              setShowOptions(false)
+          {/* Chevron Options */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              closeAllPopups();
+              setShowOptions(true);
             }}
-            className='flex items-center w-full px-4 py-2 gap-3 rounded-lg'>
-              <FaRegCopy size={14}/>
-              <span>
-                Copy
-              </span>
+            className="absolute top-1 right-1  text-gray-500 hover:text-gray-700"
+          >
+            <FaChevronDown size={14} />
+          </button>
+
+          {/* Smile Reaction Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              closeAllPopups();
+              setShowReactions(true);
+            }}
+            className={`absolute top-1/2 -translate-y-1/2
+              ${isUserMessage ? "-left-7" : "-right-7"}`}
+          >
+            <FaSmile size={16} className="text-gray-500" />
+          </button>
+
+          {/* Content */}
+          {message.contentType === "image" && (
+            <img
+              src={message.imageOrVideoUrl}
+              alt="media"
+              className="rounded-md mb-1 max-h-60 object-cover w-full"
+            />
+          )}
+
+          <p className="text-[14.2px] leading-tight break-words whitespace-pre-wrap">
+            {message.content}
+          </p>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-1 mt-0.5 h-4 select-none">
+            <span className="text-[10px] opacity-50">
+              {format(new Date(message.createdAt), "h:mm a")}
+            </span>
+            {isUserMessage && (
+              <>
+                {message.messageStatus === "read" ? (
+                  <FaCheckDouble size={11} className="text-[#53bdeb]" />
+                ) : message.messageStatus === "delivered" ? (
+                  <FaCheckDouble size={11} className="opacity-40" />
+                ) : (
+                  <FaCheck size={11} className="opacity-40" />
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Reactions Pill */}
+          {groupedReactions.length > 0 && (
+            <div
+              className={`absolute -bottom-3 ${isUserMessage ? "right-2" : "left-2"}
+              flex items-center gap-1 px-2 py-0.5 rounded-full shadow-sm border
+              ${isDark ? "bg-[#233138] border-[#0b141a]" : "bg-[#f0f2f5] border-white"}`}
+            >
+              {groupedReactions.map((r, i) => (
+                <span key={i} className="text-[11px]">
+                  {r.emoji}{r.count > 1 && r.count}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Options Menu */}
+        {showOptions && (
+          <div
+            ref={optionRef}
+            className={`absolute top-7 right-0 z-50 w-36 rounded-sm shadow-2xl py-2
+            ${isDark ? "bg-[#233138] text-white" : "bg-white text-black"}`}
+          >
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(message.content);
+                closeAllPopups();
+              }}
+              className="flex items-center gap-4 w-full px-5 py-2.5 text-sm hover:bg-black/10"
+            >
+              <FaRegCopy size={14} /> Copy
             </button>
 
             {isUserMessage && (
-              <button onClick={() => {
-              deleteMessage(message?._id)
-              setShowOptions(false)
-            }}
-            className='flex items-center w-full px-4 py-2 gap-3 rounded-lg text-red-600'>
-              <FaRegCopy className="text-red-600" size={14}/>
-              <span>
-                Delete
-              </span>
-            </button>
+              <button
+                onClick={() => {
+                  deleteMessage(message._id);
+                  closeAllPopups();
+                }}
+                className="flex items-center gap-4 w-full px-5 py-2.5 text-sm text-red-500 hover:bg-black/10"
+              >
+                <FaTrashAlt size={14} /> Delete
+              </button>
             )}
           </div>
         )}
+
+        {/* Full Emoji Picker */}
+        {showEmojiPicker && (
+          <div
+            ref={emojiPickerRef}
+            className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4"
+          >
+            <div className="relative">
+              <button
+                onClick={() => setShowEmojiPicker(false)}
+                className="absolute -top-10 right-0 text-white"
+              >
+                <RxCross2 size={26} />
+              </button>
+              <EmojiPicker
+                onEmojiClick={(obj) => handleReact(obj.emoji)}
+                theme={isDark ? "dark" : "light"}
+              />
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

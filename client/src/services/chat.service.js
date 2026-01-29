@@ -11,12 +11,13 @@ export const initializeSocket = () => {
     const user = useUserStore.getState().user;
     const BACKEND_URL = process.env.REACT_APP_API_URL || "http://localhost:3000";
 
-    socket = io(BACKEND_URL, {
-        withCredentials: true,
-        trasports: ['websocket', 'polling'],
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-    });
+   socket = io(BACKEND_URL, {
+    withCredentials: true,
+    transports: ['websocket', 'polling'], // FIXED: spelling
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+});
+
 
 
     // Handle connection event

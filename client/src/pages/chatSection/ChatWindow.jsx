@@ -26,7 +26,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     const { theme } = useThemeStore();
     const { user } = useUserStore();
 
-    const { messages, loading, sendMessage, receiveMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping, stopTyping, getUserLastSeen, isUserOnline, cleanup, addReaction, deleteMessage } = useChatStore();
+    const { messages, sendMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping, stopTyping, getUserLastSeen, isUserOnline, addReaction, deleteMessage } = useChatStore();
     //get online status of user and last seen
     const online = isUserOnline(selectedContact?._id);
     const lastSeen = getUserLastSeen(selectedContact?._id);
@@ -37,15 +37,15 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         if (selectedContact?._id && conversations?.data?.length > 0) {
             const conversation = conversations?.data?.find((conv) =>
                 conv.participants.some((participant) => participant._id === selectedContact?._id))
-            if (conversation._id) {
+            if (conversation?._id) {
                 fetchMessages(conversation._id)
             }
         }
-    }, [selectedContact, conversations])
+    }, [selectedContact, conversations, fetchMessages])
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [fetchConversations]);
 
     const scrollToBottom = () => {
         messageEndRef.current?.scrollIntoView({ behavior: "auto" })
@@ -71,7 +71,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 clearTimeout(typingTimeoutRef.current)
             }
         }
-    }, { message, selectedContact, startTyping, stopTyping })
+    }, [message, selectedContact, startTyping, stopTyping])
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -88,7 +88,8 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         if (!selectedContact) return;
         setFilePreview(null);
         try {
-            const formData = new formData();
+            const formData = new FormData();
+
             formData.append("senderId", user?._id)
             formData.append("receiverId", selectedContact?._id)
 
@@ -212,7 +213,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                     <React.Fragment key={date}>
                         {renderDateSeparator(new Date(date))}
                         {msgs.filter(
-                            (msg) => msg.conversation === selectedContact?.conversation?._id
+                            (msg) => msg.message === selectedContact?._id.message?._id
                         ).map((msg) => (
                             <MessageBubble
                                 key={msg._id || msg.tempId}

@@ -23,7 +23,7 @@ const initializeSocket = (server) => {
         let userId = null;
 
         // ================= USER CONNECT =================
-        socket.on("user-connected", async (connectingUserId) => {
+        socket.on("user_connected", async (connectingUserId) => {
             userId = connectingUserId;
             onlineUsers.set(userId, socket.id);
             socket.join(userId);
