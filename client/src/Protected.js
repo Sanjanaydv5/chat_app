@@ -7,22 +7,39 @@ import Loader from "./utils/Loader";
 
 export const ProtectedRoute = () => {
   const location = useLocation();
-  const { isAuthenticated, setUser, clearUser } = useUserStore();
+  const { isAuthenticated, setUser, clearUser, user } = useUserStore();
   const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) return; // 🔑 STOP RECHECK
+    console.log("ProtectedRoute: isAuthenticated=", isAuthenticated, "user=", user);
+    
+    // Check if token exists
+    const token = localStorage.getItem('token');
+    console.log("ProtectedRoute: token=", token);
+    
+    // If authenticated but no user data, force re-check (don't require token since cookies might work)
+    if (isAuthenticated && !user) {
+      console.log("ProtectedRoute: Authenticated but no user data, forcing check");
+    } else if (isAuthenticated && user) {
+      console.log("ProtectedRoute: Already authenticated with user data, skipping check");
+      return; // 🔑 STOP RECHECK
+    }
 
     const verifyAuth = async () => {
+      console.log("ProtectedRoute: Starting auth verification...");
       setIsChecking(true);
       try {
         const result = await checkUserAuth();
+        console.log("ProtectedRoute: checkUserAuth result=", result);
         if (result?.authenticated) {
+          console.log("ProtectedRoute: Setting user=", result.user);
           setUser(result.user);
         } else {
+          console.log("ProtectedRoute: Not authenticated, clearing user");
           clearUser();
         }
-      } catch {
+      } catch (error) {
+        console.error("ProtectedRoute: Error during auth check=", error);
         clearUser();
       } finally {
         setIsChecking(false);

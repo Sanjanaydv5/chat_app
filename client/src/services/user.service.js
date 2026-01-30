@@ -43,17 +43,19 @@ export const updateUserProfile = async (updateData) => {
 export const checkUserAuth = async () => {
   try {
     const res = await axiosInstance.get("/auth/check-authenticated");
+    console.log("checkUserAuth response:", res.data);
 
-    if (res.data?.success) {
+    if (res.data?.status === 'success') {
       return {
-        isAuthenticated: true,
+        authenticated: true,
         user: res.data.data,
       };
     }
 
-    return { isAuthenticated: false };
+    return { authenticated: false };
   } catch (error) {
-    return { isAuthenticated: false };
+    console.error("checkUserAuth error:", error);
+    return { authenticated: false };
   }
 };
 

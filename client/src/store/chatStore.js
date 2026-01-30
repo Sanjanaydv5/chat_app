@@ -138,13 +138,13 @@ export const useChatStore = create((set, get) => ({
             });
         });
         //emit status check for all users in conversations list
-        const { conversations } = get();
+        const { conversations, currentUser } = get();
         if (conversations?.data?.length > 0) {
             conversations.data?.forEach((conv) => {
                 const otherUser = conv.participants.find(
-                    (p) => p._id !== get().currentUser._Id
+                    (p) => p._id !== currentUser?._id
                 );
-                if (otherUser._id) {
+                if (otherUser?._id) {
                     socket.emit("get_user_status", otherUser._id, (status) => {
                         set((state) => {
                             const newOnlineUsers = new Map(state.onlineUsers);
@@ -177,13 +177,19 @@ export const useChatStore = create((set, get) => ({
 
     //fetch messages for a conversation
     fetchMessages: async (conversationId) => {
-        if (!conversationId) return;
+        if (!conversationId) {
+            console.log("fetchMessages: No conversationId provided");
+            return;
+        }
+        console.log("fetchMessages: Fetching messages for conversation:", conversationId);
         set({ loading: true, error: null });
         try {
             const { data } = await axiosInstance.get(
                 `/chats/conversations/${conversationId}/messages`
             );
+            console.log("fetchMessages: Response data:", data);
             const messageArray = data.data || data || [];
+            console.log("fetchMessages: Message array:", messageArray);
             set({
                 messages: messageArray,
                 currentConversation: conversationId, loading: false
@@ -195,17 +201,21 @@ export const useChatStore = create((set, get) => ({
 
             return messageArray;
         } catch (error) {
+            console.error("fetchMessages: Error:", error);
             set({ error: error?.response?.data?.message || error?.message, loading: false });
             return [];
         }
     },
     //send message in real time
     sendMessage: async (formData) => {
+        console.log("chatStore sendMessage called");
         const senderId = formData.get("senderId");
         const receiverId = formData.get("receiverId");
         const media = formData.get("media");
         const content = formData.get("content");
         const messageStatus = formData.get("messageStatus");
+        
+        console.log("FormData values:", { senderId, receiverId, content, messageStatus, media: media?.name });
 
 
         const { conversations } = get();
@@ -246,8 +256,11 @@ export const useChatStore = create((set, get) => ({
             },
         }
     );
+    
+    console.log("sendMessage response:", response.data);
 
     const messageData = response.data?.data ?? response.data;
+    console.log("sendMessage messageData:", messageData);
 
     // Replace optimistic message with real one
     set((state) => ({

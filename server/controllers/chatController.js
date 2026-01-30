@@ -7,8 +7,30 @@ const mongoose = require('mongoose');
 exports.sendMessage = async (req, res) => {
     // Implementation for sending a message
     try {
+        console.log("sendMessage: req.body =", req.body);
+        console.log("sendMessage: req.file =", req.file);
+        
         const { senderId, receiverId, content, messageStatus } = req.body;
         const file = req.file;
+        
+        // Validate senderId and receiverId
+        if (!senderId || !receiverId) {
+            console.error("sendMessage: Missing senderId or receiverId");
+            return response(res, 400, false, "SenderId and ReceiverId are required");
+        }
+        
+        // Validate if they are valid ObjectId strings
+        if (!mongoose.Types.ObjectId.isValid(senderId)) {
+            console.error("sendMessage: Invalid senderId format:", senderId);
+            return response(res, 400, false, "Invalid senderId format");
+        }
+        
+        if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+            console.error("sendMessage: Invalid receiverId format:", receiverId);
+            return response(res, 400, false, "Invalid receiverId format");
+        }
+        
+        console.log("sendMessage: Creating ObjectIds...");
         const senderObjectId = new mongoose.Types.ObjectId(senderId);
         const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
         const participants = [senderObjectId, receiverObjectId].sort(); // Ensure consistent ordering
@@ -66,13 +88,26 @@ exports.sendMessage = async (req, res) => {
             .populate("receiver", "username profilePicture");
 
             //emit socket event
+            console.log("Checking socket emission...");
+            console.log("req.io exists:", !!req.io);
+            console.log("req.socketUserMap exists:", !!req.socketUserMap);
+            
             if(req.io && req.socketUserMap){
+                console.log("receiverId:", receiverId);
                 const receiverSocketId = req.socketUserMap.get(receiverId.toString());
+                console.log("receiverSocketId:", receiverSocketId);
+                console.log("Online users:", Array.from(req.socketUserMap.entries()));
+                
                 if(receiverSocketId){
-                    req.io.to(receiverSocketId).emit("receive_message",populatedMessage);
+                    console.log("Emitting receive_message to socket:", receiverSocketId);
+                    req.io.to(receiverSocketId).emit("receive_message", populatedMessage);
                     message.messageStatus = "delivered";
                     await message.save();
+                } else {
+                    console.log("Receiver is offline, message not delivered in real-time");
                 }
+            } else {
+                console.log("Socket or socketUserMap not available");
             }
 
         return response(res, 200, true, "Message sent successfully", populatedMessage);
@@ -86,13 +121,15 @@ exports.sendMessage = async (req, res) => {
 
 // get conversation between two users
 exports.getConversation = async (req, res) => {
-    const userId = req.user.userId;
+    const userId = req.user.id;
+    console.log("getConversation: userId from token:", userId);
     try {
         let conversations = await conversation.find({ participants: userId })
             .populate("participants","username profilePicture isOnline lastSeen")
             .populate({ path: "lastMessage", populate: { path: "sender receiver", select: "username profilePicture" } })
             .sort({ updatedAt: -1 });
-
+        
+        console.log("getConversation: Found conversations:", conversations.length);
         return response(res, 200, true, "Conversations fetched successfully", conversations);
     } catch (error) {
         console.error("Error fetching conversations:", error);
@@ -103,23 +140,26 @@ exports.getConversation = async (req, res) => {
 // get messages in a conversation
 exports.getMessages = async (req, res) => {
     const { conversationId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
+    console.log("getMessages: userId=", userId, "conversationId=", conversationId);
     try {
         const chatConversation = await conversation.findById(conversationId);
         if (!chatConversation || !chatConversation.participants.includes(userId)) {
+            console.log("getMessages: Conversation not found or user not participant");
             return response(res, 404, false, "Conversation not found");
         }
         const messages = await Message.find({ conversation: conversationId })
             .populate("sender", "username profilePicture")
             .populate("receiver", "username profilePicture")
             .sort({ createdAt: 1 });
+        console.log("getMessages: Found messages:", messages.length);
         await Message.updateMany(
             { conversation: conversationId, receiver: userId, messageStatus:{$in: ("sent", "delivered")} },
             { $set: { messageStatus: "read" } }
         );
 
-        conversation.unreadCount = 0;
-        await conversation.save();
+        chatConversation.unreadCount = 0;
+        await chatConversation.save();
         
         return response(res, 200, true, "Messages fetched successfully", messages);
     } catch (error) {
@@ -130,7 +170,7 @@ exports.getMessages = async (req, res) => {
 
 exports.markAsRead = async (req, res) => {
     const { messageIds } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     try {
         //get relevant messages to determine senders      
         let messages = await Message.find({ _id: { $in: messageIds }, receiver: userId });
@@ -163,7 +203,7 @@ exports.markAsRead = async (req, res) => {
 
 exports.deleteMessage = async (req, res) => {
     const { messageId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
     try {
         const message = await Message.findById(messageId);
         if (!message) {

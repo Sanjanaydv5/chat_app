@@ -2,7 +2,15 @@ const jwt = require("jsonwebtoken");
 const response = require("../utils/responseHandler"); // ✅ REQUIRED
 
 const authMiddleware = (req, res, next) => {
-  const authToken = req.cookies?.auth_token;
+  // Check for token in cookies first, then in Authorization header
+  let authToken = req.cookies?.auth_token;
+  
+  if (!authToken) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      authToken = authHeader.substring(7); // Remove 'Bearer ' prefix
+    }
+  }
 
   if (!authToken) {
     return response(

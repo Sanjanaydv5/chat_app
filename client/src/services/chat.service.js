@@ -23,8 +23,22 @@ export const initializeSocket = () => {
     // Handle connection event
     socket.on("connect", () => {
         console.log("Connected to chat server", socket.id);
-        if (user && user._id) {
-            socket.emit("user_connected", user._id);
+        const currentUser = useUserStore.getState().user;
+        if (currentUser && currentUser._id) {
+            console.log("Emitting user_connected for user:", currentUser._id);
+            socket.emit("user_connected", currentUser._id);
+        } else {
+            console.error("Cannot emit user_connected: user not found");
+        }
+    });
+
+    // Handle reconnection
+    socket.on("reconnect", () => {
+        console.log("Reconnected to chat server", socket.id);
+        const currentUser = useUserStore.getState().user;
+        if (currentUser && currentUser._id) {
+            console.log("Emitting user_connected after reconnect:", currentUser._id);
+            socket.emit("user_connected", currentUser._id);
         }
     });
 
