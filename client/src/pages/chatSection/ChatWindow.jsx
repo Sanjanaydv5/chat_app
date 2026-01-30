@@ -92,7 +92,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         try {
             const formData = new FormData();
 
-            formData.append("senderId", user?._id)
+            // Note: senderId is now taken from auth token on server-side
             formData.append("receiverId", selectedContact?._id)
 
             const status = online ? "delivered" : "send";

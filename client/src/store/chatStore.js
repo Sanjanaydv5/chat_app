@@ -201,7 +201,8 @@ export const useChatStore = create((set, get) => ({
     },
     //send message in real time
     sendMessage: async (formData) => {
-        const senderId = formData.get("senderId");
+        const { currentUser } = get();
+        const senderId = currentUser?._id; // Get from current user instead of formData
         const receiverId = formData.get("receiverId");
         const media = formData.get("media");
         const content = formData.get("content");

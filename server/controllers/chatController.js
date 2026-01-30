@@ -7,13 +7,18 @@ const mongoose = require('mongoose');
 exports.sendMessage = async (req, res) => {
     // Implementation for sending a message
     try {
-        const { senderId, receiverId, content, messageStatus } = req.body;
+        const { receiverId, content, messageStatus } = req.body;
         const file = req.file;
         
-        // Validate ObjectId format
+        // Use authenticated user's ID as sender (prevent impersonation)
+        const senderId = req.user.userId;
+        
+        // Validate sender ID from auth token
         if (!senderId || !mongoose.Types.ObjectId.isValid(senderId)) {
-            return response(res, 400, false, "Invalid sender ID");
+            return response(res, 401, false, "Authentication required");
         }
+        
+        // Validate receiver ID from request body
         if (!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
             return response(res, 400, false, "Invalid receiver ID");
         }
@@ -90,7 +95,7 @@ exports.sendMessage = async (req, res) => {
         console.error("Error sending message:", error);
         // Log more details for debugging
         console.error("Request body:", req.body);
-        return response(res, 500, false, "Internal server error: " + error.message);
+        return response(res, 500, false, "Internal server error");
     }
 
 };
@@ -176,7 +181,6 @@ exports.markAsRead = async (req, res) => {
                             messageStatus:"read",
                         };
                         req.io.to(senderSocketId).emit("message_read",updateMessage);
-                        await message.save()
                     }
                 }
             }
