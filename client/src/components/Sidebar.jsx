@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   FaWhatsapp,
+  FaUserCircle,
   FaCog
 } from "react-icons/fa";
 import { IoMdRadioButtonOn } from "react-icons/io";
@@ -13,24 +14,16 @@ import useLayoutStore from "../store/layoutStore";
 
 const Sidebar = () => {
   const location = useLocation();
-
-  // ✅ SAFE DEFAULT (no window access here)
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const { theme } = useThemeStore();
   const { user } = useUserStore();
   const { activeTab, setActiveTab, selectedContact } = useLayoutStore();
 
-  // ✅ window access ONLY in useEffect
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile(); // initial check
-    window.addEventListener("resize", checkMobile);
-
-    return () => window.removeEventListener("resize", checkMobile);
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
   }, []);
 
   useEffect(() => {
@@ -40,9 +33,8 @@ const Sidebar = () => {
       "/user-profile": "profile",
       "/setting": "setting",
     };
-
     setActiveTab(map[location.pathname]);
-  }, [location.pathname, setActiveTab]);
+  }, [location, setActiveTab]);
 
   if (isMobile && selectedContact) return null;
 
@@ -55,7 +47,10 @@ const Sidebar = () => {
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.95 }}
           className={`relative p-3 rounded-xl transition-all duration-200
-            ${isActive ? "bg-green-500/20" : "hover:bg-gray-300/20"}`}
+            ${isActive
+              ? "bg-green-500/20"
+              : "hover:bg-gray-300/20"
+            }`}
         >
           {icon}
 
@@ -103,21 +98,28 @@ const Sidebar = () => {
       {/* BOTTOM */}
       <div className={`${isMobile ? "flex gap-6" : "flex flex-col gap-8"}`}>
         <NavItem
-          to="/user-profile"
-          tab="profile"
-          icon={
-            <div className="w-8 h-8 rounded-full overflow-hidden ring-2 hover:ring-green-400 transition">
-              <img
-                src={
-                  user?.profilePicture ||
-                  `https://ui-avatars.com/api/?name=${user?.username || "User"}`
-                }
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          }
+        to="/user-profile"
+        tab="profile"
+        icon={
+    <div className="flex items-center justify-center w-8 h-8 overflow-hidden rounded-full ring-2 ring-transparent hover:ring-green-400 transition-all">
+      {user?.profilePicture ? (
+        <img
+          src={user?.profilePicture}
+          alt="Profile"
+          className="h-full w-full object-cover"
+          // If the image link is broken, hide it so the fallback can show
+          onError={(e) => { e.target.style.display = 'none'; }}
         />
+      ) : (
+        <img
+          src={"https://ui-avatars.com/api/?name=" + user?.username}
+          alt="Avatar"
+          className="h-full w-full object-cover"
+        />
+      )}
+    </div>
+  }
+/>
 
         <NavItem
           to="/setting"

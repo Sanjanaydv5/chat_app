@@ -22,6 +22,10 @@ const useLoginStore = create(
     }),
     {
       name: "login-storage",
+      partialize: (state) => ({
+        step: state.step,
+        userPhoneData:state.userPhoneData
+      })
     }
   )
 );
