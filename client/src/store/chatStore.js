@@ -33,34 +33,34 @@ export const useChatStore = create((set, get) => ({
         socket.on('receive_message', (message) => {
             const { currentConversation, messages, currentUser } = get();
             
-            // Add message if it doesn't already exist
+            // Add message if it doesn't already exist and belongs to current conversation
             const messageExists = messages.some((msg) => msg._id === message._id);
-            if (!messageExists) {
+            if (!messageExists && message.conversation === currentConversation) {
                 set({ messages: [...messages, message] });
-                
-                // Update conversations list with new message
-                set((state) => {
-                    const updatedConversations = state.conversations?.data?.map((conv) => {
-                        if (conv._id === message.conversation) {
-                            return {
-                                ...conv,
-                                lastMessage: message,
-                                unreadCount: message?.receiver?._id === currentUser?._id
-                                    ? (conv.unreadCount || 0) + 1
-                                    : conv.unreadCount || 0
-                            };
-                        }
-                        return conv;
-                    });
-
-                    return {
-                        conversations: {
-                            ...state.conversations,
-                            data: updatedConversations
-                        }
-                    };
-                });
             }
+            
+            // Always update conversations list with new message
+            set((state) => {
+                const updatedConversations = state.conversations?.data?.map((conv) => {
+                    if (conv._id === message.conversation) {
+                        return {
+                            ...conv,
+                            lastMessage: message,
+                            unreadCount: message?.receiver?._id === currentUser?._id
+                                ? (conv.unreadCount || 0) + 1
+                                : conv.unreadCount || 0
+                        };
+                    }
+                    return conv;
+                });
+
+                return {
+                    conversations: {
+                        ...state.conversations,
+                        data: updatedConversations
+                    }
+                };
+            });
         });
 
         //listen for message read updates
@@ -74,11 +74,11 @@ export const useChatStore = create((set, get) => ({
             }));
         });
 
-        //conform message sent
+        //confirm message sent
         socket.on('message_send', (message) => {
             set((state) => ({
                 messages: state.messages.map((msg) =>
-                    msg._id === message._id ? { ...msg, status: 'sent' } : msg
+                    msg._id === message._id ? { ...msg, messageStatus: 'sent' } : msg
                 )
             }));
         });
@@ -87,7 +87,7 @@ export const useChatStore = create((set, get) => ({
         socket.on('message_status_update', ({ messageId, messageStatus }) => {
             set((state) => ({
                 messages: state.messages.map((msg) =>
-                    msg._id === messageId ? { ...msg, status: messageStatus } : msg
+                    msg._id === messageId ? { ...msg, messageStatus: messageStatus } : msg
                 )
             }));
         });
