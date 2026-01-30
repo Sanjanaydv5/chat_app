@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   FaWhatsapp,
-  FaUserCircle,
   FaCog
 } from "react-icons/fa";
 import { IoMdRadioButtonOn } from "react-icons/io";
