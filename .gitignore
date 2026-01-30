@@ -13,6 +13,10 @@ yarn-error.log*
 dist/
 build/
 
+# uploads (keep upload.js config file, ignore uploaded files)
+server/uploads/*
+!server/uploads/upload.js
+
 # OS files
 .DS_Store
 Thumbs.db

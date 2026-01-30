@@ -14,7 +14,7 @@ This guide provides instructions for deploying the chat application to productio
 ### Third-Party Services
 - **Cloudinary** (for image/file uploads) - Get API credentials from https://cloudinary.com
 - **MongoDB Atlas** (optional, for cloud database) - https://www.mongodb.com/cloud/atlas
-- **Email Service** (optional, for nodemailer) - SMTP credentials
+- **Email Service** (optional, for SMTP email notifications) - SMTP credentials
 
 ## Environment Configuration
 
@@ -74,6 +74,7 @@ This creates optimized production build in `client/build/` directory.
 #### Prepare Server
 ```bash
 cd server
+# Use --production to install only production dependencies (no devDependencies)
 npm install --production
 ```
 
@@ -83,7 +84,7 @@ npm install --production
 1. Create account at https://www.mongodb.com/cloud/atlas
 2. Create a new cluster
 3. Create database user with password
-4. Whitelist your server's IP address (or 0.0.0.0/0 for all IPs)
+4. Whitelist your server's IP address (WARNING: avoid using 0.0.0.0/0 in production as it allows access from any IP)
 5. Get connection string and update `MONGODB_URI` in server/.env
 
 #### Option B: Self-Hosted MongoDB
@@ -101,7 +102,7 @@ npm install --production
 heroku login
 heroku create your-app-name-api
 heroku config:set NODE_ENV=production
-heroku config:set PORT=3001
+# Note: Heroku automatically assigns PORT, don't set it manually
 heroku config:set CLIENT_URL=https://your-frontend.com
 heroku config:set MONGODB_URI=your-mongodb-uri
 heroku config:set JWT_SECRET=your-secret-key
@@ -134,9 +135,9 @@ sudo apt-get install -y nodejs
 # Install PM2 for process management
 sudo npm install -g pm2
 
-# Clone repository
-git clone https://github.com/Sanjanaydv5/chat_app.git
-cd chat_app
+# Clone repository (replace with your repository URL)
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+cd YOUR_REPO
 
 # Setup environment
 cp server/.env.example server/.env
@@ -146,7 +147,7 @@ nano server/.env  # Edit with your values
 cd server
 npm install --production
 
-# Start with PM2
+# Start with PM2 (ensure you're in the server directory)
 pm2 start index.js --name chat-api
 pm2 save
 pm2 startup
@@ -185,8 +186,9 @@ sudo cp -r build/* /var/www/html/chat-app/
 
 #### Option C: Docker Deployment
 
-Create `Dockerfile` for server:
+Create `Dockerfile` in the root directory:
 ```dockerfile
+# Note: This Dockerfile should be placed in the root directory
 FROM node:18-alpine
 WORKDIR /app
 COPY server/package*.json ./
@@ -237,8 +239,8 @@ pm2 restart chat-api
 #### Database Backups
 Set up automated MongoDB backups:
 ```bash
-# Create backup script
-mongodump --uri="your-mongodb-uri" --out=/backups/$(date +%Y%m%d)
+# Create backup script (includes timestamp to avoid overwriting)
+mongodump --uri="your-mongodb-uri" --out=/backups/$(date +%Y%m%d_%H%M%S)
 ```
 
 ## Security Checklist
