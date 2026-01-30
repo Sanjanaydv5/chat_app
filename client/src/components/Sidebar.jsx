@@ -98,13 +98,13 @@ const Sidebar = () => {
       {/* BOTTOM */}
       <div className={`${isMobile ? "flex gap-6" : "flex flex-col gap-8"}`}>
         <NavItem
-  to="/user-profile"
-  tab="profile"
-  icon={
+        to="/user-profile"
+        tab="profile"
+        icon={
     <div className="flex items-center justify-center w-8 h-8 overflow-hidden rounded-full ring-2 ring-transparent hover:ring-green-400 transition-all">
       {user?.profilePicture ? (
         <img
-          src={user.profilePicture}
+          src={user?.profilePicture}
           alt="Profile"
           className="h-full w-full object-cover"
           // If the image link is broken, hide it so the fallback can show
@@ -112,7 +112,7 @@ const Sidebar = () => {
         />
       ) : (
         <img
-          src={`https://ui-avatars.com/api/?name=${user?.username || 'User'}&background=random&color=fff`}
+          src={"https://ui-avatars.com/api/?name=" + user?.username}
           alt="Avatar"
           className="h-full w-full object-cover"
         />
