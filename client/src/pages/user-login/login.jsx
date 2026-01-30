@@ -79,7 +79,7 @@ const avatars = [
 ======================= */
 
 const Login = () => {
-  const {
+  const {  
     step,
     setStep,
     setUserPhoneData,
@@ -202,7 +202,7 @@ const Login = () => {
 
       let response;
 
-      if (userPhoneData.email) {
+      if (userPhoneData?.email) {
         // ✅ EMAIL LOGIN
         response = await verifyOtp(
           null,

@@ -5,8 +5,9 @@ import useThemeStore from '../store/themeStore';
 import Sidebar from "./Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import ChatWindow from "../pages/chatSection/ChatWindow";
+import ChatList from "../pages/chatSection/ChatList";
 
-const Layout = ({ children, isThemeDialogOpen, toogleThemeDialog, isStatusPreviewOpen, statusPreviewContent }) => {
+const Layout = ({ children, isThemeDialogOpen, toogleThemeDialog, isStatusPreviewOpen, statusPreviewContent, contacts = [] }) => {
     const selectedContact = useLayoutStore(state => state.selectedContact);
     const setSelectedContact = useLayoutStore(state => state.setSelectedContact);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -36,7 +37,8 @@ const Layout = ({ children, isThemeDialogOpen, toogleThemeDialog, isStatusPrevie
                             transition={{ type: "tween" }}
                             className={`w-full md:w-2/5 h-full ${isMobile ? "pb-16" : ""}`}
                         >
-                            {children}
+                            <ChatList
+                            contacts={contacts}/>
                         </motion.div>
                     )}
 

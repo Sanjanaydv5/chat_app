@@ -1,7 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Layout from "./Layout";
-import ChatList from "../pages/chatSection/ChatList";
 import { useState, useEffect } from "react";
 import { getAllUsers } from "../services/user.service";
 
@@ -29,21 +28,14 @@ const HomePage = () => {
     }, []);
 
     return (
-        <Layout>
+        <Layout contacts={allUsers}>
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
                 className="h-full"
             >
-                {/* Check if users exist before rendering */}
-                {allUsers.length > 0 ? (
-                    <ChatList contacts={allUsers} />
-                ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                        No contacts available
-                    </div>
-                )}
+                {/* Content can be added here if needed */}
             </motion.div>
         </Layout>
     );
