@@ -3,14 +3,14 @@ import axiosInstance from "./url.service";
 // ---------------- SEND OTP ----------------
 export const sendOtp = async (phoneNumber, phoneSuffix, email) => {
   try {
-    const response = await axiosInstance.post("/auth/send-otp", {
+    const res = await axiosInstance.post("/auth/send-otp", {
       phoneNumber,
       phoneSuffix,
       email,
     });
-    return response.data;
+    return res.data;
   } catch (error) {
-    throw error.response? error.response.data : error.message;
+    throw error.response?.data || error.message;
   }
 };
 
@@ -25,54 +25,56 @@ export const verifyOtp = async (phoneNumber, phoneSuffix, email, otp) => {
     });
     return res.data;
   } catch (error) {
-    throw error.response ? error.response.data : error.message;
+    throw error.response?.data || error.message;
   }
 };
 
 // ---------------- UPDATE PROFILE ----------------
 export const updateUserProfile = async (updateData) => {
   try {
-    const response = await axiosInstance.put("/auth/update-profile", updateData);
-    return response.data;
+    const res = await axiosInstance.put("/auth/update-profile", updateData);
+    return res.data;
   } catch (error) {
-    throw error.response ? error.response.data : error.message;
+    throw error.response?.data || error.message;
   }
 };
 
 // ---------------- CHECK AUTH ----------------
 export const checkUserAuth = async () => {
   try {
-    const response = await axiosInstance.get("/auth/check-authenticated");
+    const res = await axiosInstance.get("/auth/check-authenticated");
+    console.log("checkUserAuth response:", res.data);
 
-    if (response.data?.success) {
+    if (res.data?.status === 'success') {
       return {
-        isAuthenticated: true,
-        user: response.data.data,
+        authenticated: true,
+        user: res.data.data,
       };
     }
 
-    return { isAuthenticated: false };
+    return { authenticated: false };
   } catch (error) {
-    return { isAuthenticated: false };
+    console.error("checkUserAuth error:", error);
+    return { authenticated: false };
   }
 };
 
 // ---------------- LOGOUT ----------------
 export const logoutUser = async () => {
   try {
-    const response = await axiosInstance.get("/auth/logout");
-    return response.data;
+    const res = await axiosInstance.get("/auth/logout");
+    return res.data;
   } catch (error) {
-    throw error.response ? error.response.data : error.message;
+    throw error.response?.data || error.message;
   }
 };
 
 // ---------------- GET ALL USERS ----------------
 export const getAllUsers = async () => {
   try {
-    const response = await axiosInstance.get("/auth/users");
-    return response.data;
+    const res = await axiosInstance.get("/auth/users");
+    return res.data;
   } catch (error) {
-    throw error.response ? error.response.data : error.message;
+    throw error.response?.data || error.message;
   }
 };

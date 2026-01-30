@@ -21,13 +21,18 @@ const sendOTP = async (req, res) => {
         /* -------- EMAIL OTP -------- */
         if (email) {
             user = await User.findOne({ email });
+            console.log("sendOTP: Email OTP request for:", email);
+            console.log("sendOTP: Existing user found:", !!user);
 
             if (!user) {
+                console.log("sendOTP: Creating new user for email:", email);
                 user = new User({
                     email,
                     isVerified: false,
                     agreed: false
                 });
+            } else {
+                console.log("sendOTP: Using existing user:", user._id);
             }
 
             user.emailOtp = otp;
@@ -50,15 +55,20 @@ const sendOTP = async (req, res) => {
         }
 
         const fullPhoneNumber = `+${phoneSuffix}${phoneNumber}`;
+        console.log("sendOTP: Phone OTP request for:", fullPhoneNumber);
         user = await User.findOne({ phoneNumber });
+        console.log("sendOTP: Existing user found:", !!user);
 
         if (!user) {
+            console.log("sendOTP: Creating new user for phone:", phoneNumber);
             user = new User({
                 phoneNumber,
                 phoneSuffix,
                 isVerified: false,
                 agreed: false
             });
+        } else {
+            console.log("sendOTP: Using existing user:", user._id);
         }
 
         try {
@@ -81,12 +91,14 @@ const sendOTP = async (req, res) => {
 // Step-2 Verify OTP
 const verifyOTP = async (req, res) => {
     const { phoneNumber, phoneSuffix, email, otp } = req.body;
+    console.log("verifyOTP: Request for email=", email, "phoneNumber=", phoneNumber);
 
     try {
         let user;
 
         if (email) {
             user = await User.findOne({ email });
+            console.log("verifyOTP: User found by email:", !!user, user?._id);
             if (!user) {
                 return response(res, 404, false, "User not found");
             }
@@ -142,30 +154,40 @@ const verifyOTP = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     // Implementation for updating user profile
-    const { username, agreed, about } = req.body;
+    const { username, agreed, about, profilePicture } = req.body;
     const userId = req.user.id;  // Changed from userId to id (matches generateToken)
+    console.log("updateProfile: userId=", userId);
+    console.log("updateProfile: Request body=", req.body);
+    
     try {
         const user = await User.findById(userId);
         if (!user) {
+            console.log("updateProfile: User not found");
             return response(res, 404, false, "User not found");
         }
 
-        // For now, skip file upload if uploadFileToCloudinary is not set up
-        // const file = req.file;
-        // if(file){
-        //     const uploadResult = await uploadFileToCloudinary(file);
-        //     console.log("Upload Result:", uploadResult);
-        //     user.profilePicture = uploadResult?.secure_url;
-        // } else if (req.body.profilePicture) {
-        //     user.profilePicture = req.body.profilePicture;
-        // }
+        console.log("updateProfile: Current user data=", { username: user.username, profilePicture: user.profilePicture });
+
+        // Update profile picture if provided
+        if (profilePicture) {
+            user.profilePicture = profilePicture;
+        }
 
         if (username) user.username = username;
-        if (agreed) user.agreed = agreed;
+        if (agreed !== undefined) user.agreed = agreed;
         if (about) user.about = about;
+        
         await user.save();
-        console.log(user);
-        return response(res, 200, true, "Profile updated successfully", user);
+        console.log("updateProfile: Updated user data=", { username: user.username, profilePicture: user.profilePicture });
+        
+        // Generate new token with updated user info
+        const token = generateToken(user._id);
+        res.cookie("auth_token", token, {
+            httpOnly: true,
+            maxAge: 1000 * 60 * 60 * 24 * 365
+        });
+        
+        return response(res, 200, true, "Profile updated successfully", { user, token });
     } catch (error) {
         console.error("Error in updateProfile:", error);
         return response(res, 500, false, "Internal Server Error");

@@ -24,9 +24,12 @@ const initializeSocket = (server) => {
 
         // ================= USER CONNECT =================
         socket.on("user_connected", async (connectingUserId) => {
+            console.log("user_connected event received for userId:", connectingUserId);
             userId = connectingUserId;
             onlineUsers.set(userId, socket.id);
             socket.join(userId);
+            
+            console.log("Online users map:", Array.from(onlineUsers.entries()));
 
             await User.findByIdAndUpdate(userId, {
                 isOnline: true,
@@ -34,6 +37,7 @@ const initializeSocket = (server) => {
             });
 
             io.emit("user_status", { userId, isOnline: true });
+            console.log("Broadcasted user_status for userId:", userId);
         });
 
         // ================= GET USER STATUS =================

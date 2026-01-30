@@ -24,7 +24,11 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     const fileInputRef = useRef(null);
 
     const { theme } = useThemeStore();
-    const { user } = useUserStore();
+    const { user, isAuthenticated } = useUserStore();
+    
+    useEffect(() => {
+        console.log("ChatWindow: user=", user, "isAuthenticated=", isAuthenticated);
+    }, [user, isAuthenticated]);
 
     const { messages, sendMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping,
          stopTyping, getUserLastSeen, addReaction, deleteMessage, isUserOnline } = useChatStore();
@@ -35,12 +39,20 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
 
 
     useEffect(() => {
+        console.log("ChatWindow: selectedContact changed:", selectedContact?._id);
+        console.log("ChatWindow: conversations:", conversations);
         if (selectedContact?._id && conversations?.data?.length > 0) {
             const conversation = conversations?.data?.find((conv) =>
-                conv.participants.some((participant) => participant._id === selectedContact?._id))
-            if (conversation._id) {
-                fetchMessages(conversation._id)
+                conv.participants.some((participant) => participant._id === selectedContact?._id));
+            console.log("ChatWindow: Found conversation:", conversation);
+            if (conversation?._id) {
+                console.log("ChatWindow: Calling fetchMessages for:", conversation._id);
+                fetchMessages(conversation._id);
+            } else {
+                console.log("ChatWindow: No conversation found for this contact");
             }
+        } else {
+            console.log("ChatWindow: No selectedContact or conversations not loaded yet");
         }
     }, [selectedContact, conversations, fetchMessages])
 
@@ -86,16 +98,37 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     }
 
     const handleSendMessage = async () => {
-        if (!selectedContact) return;
+        console.log("handleSendMessage called");
+        console.log("selectedContact:", selectedContact);
+        console.log("user:", user);
+        console.log("message:", message);
+        console.log("selectedFile:", selectedFile);
+        
+        if (!selectedContact) {
+            console.error("No selected contact");
+            return;
+        }
+        
+        // Validate user and contact IDs before proceeding
+        if (!user?._id) {
+            console.error("User ID is not available", user);
+            return;
+        }
+        
+        if (!selectedContact?._id) {
+            console.error("Selected contact ID is not available", selectedContact);
+            return;
+        }
+        
         setFilePreview(null);
-        console.log("not found user to send message")
+        console.log("Sending message to:", selectedContact._id, "from:", user._id);
         try {
             const formData = new FormData();
 
-            formData.append("senderId", user?._id)
-            formData.append("receiverId", selectedContact?._id)
+            formData.append("senderId", user._id)
+            formData.append("receiverId", selectedContact._id)
 
-            const status = online ? "delivered" : "send";
+            const status = online ? "delivered" : "sent";
             formData.append("messageStatus", status);
             if (message.trim()) {
                 formData.append("content", message.trim());
@@ -104,8 +137,17 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
             if (selectedFile) {
                 formData.append("media", selectedFile, selectedFile.name)
             }
-            if (!message.trim() && !selectedFile) return;
-            await sendMessage(formData);
+            if (!message.trim() && !selectedFile) {
+                console.error("No message content or file to send");
+                return;
+            }
+            console.log("Calling sendMessage function...");
+            const sentMessage = await sendMessage(formData);
+            console.log("Message sent successfully:", sentMessage);
+            
+            // Refetch conversations to update the chat list
+            await fetchConversations();
+            
             //clear state
             setMessage("");
             setFilePreview(null);
@@ -254,7 +296,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                     <div ref={emojiPickerRef} className="absolute left-0 bottom-16 z-50">
                         <EmojiPicker
                         onEmojiClick={(emojiObject) => {
-                            setMessage((prev) => prev + emojiObject.activeSkinTone.emoji)
+                            setMessage((prev) => prev + emojiObject.emoji)
                             setShowEmojiPicker(false)
                         }}
                         theme={theme}/>

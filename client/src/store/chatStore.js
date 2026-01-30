@@ -15,7 +15,7 @@ export const useChatStore = create((set, get) => ({
 
 
     //socket event listeners setup
-    initsocketListeners: () => {
+    initSocketListeners: () => {
         const socket = getSocket(); // Assume getSocket is a function that returns the socket instance
         if (!socket) return;
 
@@ -26,20 +26,59 @@ export const useChatStore = create((set, get) => ({
         socket.off('send_message');
         socket.off('message_error');
         socket.off('message_delete');
+        socket.off('message_read');
+        socket.off('reaction_update');
 
         //listen for incoming messages
         socket.on('receive_message', (message) => {
-            const { currentConversation, messages } = get();
-            if (currentConversation && message.conversationId === currentConversation.id) {
+            const { currentConversation, messages, currentUser } = get();
+            
+            // Add message if it doesn't already exist and belongs to current conversation
+            const messageExists = messages.some((msg) => msg._id === message._id);
+            if (!messageExists && message.conversation === currentConversation) {
                 set({ messages: [...messages, message] });
             }
+            
+            // Always update conversations list with new message
+            set((state) => {
+                const updatedConversations = state.conversations?.data?.map((conv) => {
+                    if (conv._id === message.conversation) {
+                        return {
+                            ...conv,
+                            lastMessage: message,
+                            unreadCount: message?.receiver?._id === currentUser?._id
+                                ? (conv.unreadCount || 0) + 1
+                                : conv.unreadCount || 0
+                        };
+                    }
+                    return conv;
+                });
+
+                return {
+                    conversations: {
+                        ...state.conversations,
+                        data: updatedConversations
+                    }
+                };
+            });
         });
 
-        //conform message sent
+        //listen for message read updates
+        socket.on('message_read', (updatedMessage) => {
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg._id === updatedMessage._id 
+                        ? { ...msg, messageStatus: updatedMessage.messageStatus } 
+                        : msg
+                )
+            }));
+        });
+
+        //confirm message sent
         socket.on('message_send', (message) => {
             set((state) => ({
                 messages: state.messages.map((msg) =>
-                    msg._id === message._id ? { ...msg, status: 'sent' } : msg
+                    msg._id === message._id ? { ...msg, messageStatus: 'sent' } : msg
                 )
             }));
         });
@@ -48,7 +87,7 @@ export const useChatStore = create((set, get) => ({
         socket.on('message_status_update', ({ messageId, messageStatus }) => {
             set((state) => ({
                 messages: state.messages.map((msg) =>
-                    msg._id === messageId ? { ...msg, status: messageStatus } : msg
+                    msg._id === messageId ? { ...msg, messageStatus: messageStatus } : msg
                 )
             }));
         });
@@ -99,13 +138,13 @@ export const useChatStore = create((set, get) => ({
             });
         });
         //emit status check for all users in conversations list
-        const { conversations } = get();
+        const { conversations, currentUser } = get();
         if (conversations?.data?.length > 0) {
             conversations.data?.forEach((conv) => {
                 const otherUser = conv.participants.find(
-                    (p) => p._id !== get().currentUser._Id
+                    (p) => p._id !== currentUser?._id
                 );
-                if (otherUser._id) {
+                if (otherUser?._id) {
                     socket.emit("get_user_status", otherUser._id, (status) => {
                         set((state) => {
                             const newOnlineUsers = new Map(state.onlineUsers);
@@ -128,7 +167,7 @@ export const useChatStore = create((set, get) => ({
             const { data } = await axiosInstance.get('/chats/conversations');
             set({ conversations: data, loading: false });
 
-            get().initsocketListeners();
+            get().initSocketListeners();
             return data;
         } catch (error) {
             set({ error: error?.response?.data?.message || error?.message, loading: false });
@@ -138,13 +177,19 @@ export const useChatStore = create((set, get) => ({
 
     //fetch messages for a conversation
     fetchMessages: async (conversationId) => {
-        if (!conversationId) return;
+        if (!conversationId) {
+            console.log("fetchMessages: No conversationId provided");
+            return;
+        }
+        console.log("fetchMessages: Fetching messages for conversation:", conversationId);
         set({ loading: true, error: null });
         try {
             const { data } = await axiosInstance.get(
                 `/chats/conversations/${conversationId}/messages`
             );
+            console.log("fetchMessages: Response data:", data);
             const messageArray = data.data || data || [];
+            console.log("fetchMessages: Message array:", messageArray);
             set({
                 messages: messageArray,
                 currentConversation: conversationId, loading: false
@@ -156,17 +201,21 @@ export const useChatStore = create((set, get) => ({
 
             return messageArray;
         } catch (error) {
+            console.error("fetchMessages: Error:", error);
             set({ error: error?.response?.data?.message || error?.message, loading: false });
             return [];
         }
     },
     //send message in real time
     sendMessage: async (formData) => {
+        console.log("chatStore sendMessage called");
         const senderId = formData.get("senderId");
         const receiverId = formData.get("receiverId");
         const media = formData.get("media");
         const content = formData.get("content");
         const messageStatus = formData.get("messageStatus");
+        
+        console.log("FormData values:", { senderId, receiverId, content, messageStatus, media: media?.name });
 
 
         const { conversations } = get();
@@ -207,8 +256,11 @@ export const useChatStore = create((set, get) => ({
             },
         }
     );
+    
+    console.log("sendMessage response:", response.data);
 
     const messageData = response.data?.data ?? response.data;
+    console.log("sendMessage messageData:", messageData);
 
     // Replace optimistic message with real one
     set((state) => ({
@@ -328,7 +380,7 @@ export const useChatStore = create((set, get) => ({
             socket.emit('add_reaction', {
                 messageId,
                 emoji,
-                userId: currentUser?._id
+                reactionUserId: currentUser?._id
             });
         }
     },

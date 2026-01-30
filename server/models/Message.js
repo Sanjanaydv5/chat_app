@@ -11,7 +11,7 @@ const messageSchema = new mongoose.Schema({
     contentType: { type: String, enum: ['text', 'image', 'video'], default: 'text' },
     reactions: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        emojiString: { type: String}
+        emoji: { type: String}
     }],
     messageStatus: { type: String, enum: ['sent', 'delivered', 'read'], default: 'sent' }
 },{ timestamps: true });
