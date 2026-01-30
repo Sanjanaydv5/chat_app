@@ -92,9 +92,16 @@ exports.sendMessage = async (req, res) => {
         return response(res, 200, true, "Message sent successfully", populatedMessage);
 
     } catch (error) {
-        console.error("Error sending message:", error);
-        // Log more details for debugging
-        console.error("Request body:", req.body);
+        console.error("Error sending message:", error, {
+            route: "sendMessage",
+            userId: req.user && req.user.userId,
+            hasReceiverId: !!(req.body && req.body.receiverId),
+            hasContent: !!(req.body && req.body.content),
+        });
+        // Optionally log full request body only when explicitly enabled for debugging
+        if (process.env.DEBUG_FULL_REQUEST_LOG === "true") {
+            console.error("Request body (debug):", req.body);
+        }
         return response(res, 500, false, "Internal server error");
     }
 
@@ -127,7 +134,7 @@ exports.getMessages = async (req, res) => {
         }
         
         const chatConversation = await conversation.findById(conversationId);
-        if (!chatConversation || !chatConversation.participants.includes(userId)) {
+        if (!chatConversation || !chatConversation.participants.some(p => p.toString() === userId)) {
             return response(res, 404, false, "Conversation not found");
         }
         const messages = await Message.find({ conversation: conversationId })

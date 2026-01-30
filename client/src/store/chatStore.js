@@ -25,28 +25,44 @@ export const useChatStore = create((set, get) => ({
         socket.off('user_status');
         socket.off('send_message');
         socket.off('message_error');
-        socket.off('message_delete');
+        socket.off('message_deleted');
         socket.off('message_read');
         socket.off('reaction_update');
 
         //listen for incoming messages
         socket.on('receive_message', (message) => {
-            const { currentConversation, messages, currentUser } = get();
+            const { currentConversation, currentUser } = get();
             
             // Add message if it doesn't already exist and belongs to current conversation
-            const messageExists = messages.some((msg) => msg._id === message._id);
-            if (!messageExists && message.conversation === currentConversation) {
-                set({ messages: [...messages, message] });
+            set((state) => {
+                const messageExists = state.messages.some((msg) => msg._id === message._id);
+                if (!messageExists && message.conversation === state.currentConversation) {
+                    return { messages: [...state.messages, message] };
+                }
+                return {};
+            });
+            
+            // Mark messages as read when the logged-in user receives a message
+            // in the currently open conversation to keep read receipts in sync.
+            if (message?.receiver?._id === currentUser?._id && message.conversation === currentConversation) {
+                const { markMessagesAsRead } = get();
+                if (typeof markMessagesAsRead === 'function') {
+                    markMessagesAsRead();
+                }
             }
             
             // Always update conversations list with new message
             set((state) => {
                 const updatedConversations = state.conversations?.data?.map((conv) => {
                     if (conv._id === message.conversation) {
+                        const isForCurrentUser = message?.receiver?._id === currentUser?._id;
+                        const isCurrentConvOpen = message.conversation === currentConversation;
                         return {
                             ...conv,
                             lastMessage: message,
-                            unreadCount: message?.receiver?._id === currentUser?._id
+                            // Increment unread count only when the message is for the current user
+                            // and the conversation is not currently open.
+                            unreadCount: isForCurrentUser && !isCurrentConvOpen
                                 ? (conv.unreadCount || 0) + 1
                                 : conv.unreadCount || 0
                         };
