@@ -168,7 +168,6 @@ export const useChatStore = create((set, get) => ({
         const content = formData.get("content");
         const messageStatus = formData.get("messageStatus");
 
-        const socket = getSocket();
 
         const { conversations } = get();
         let conversationId = null;

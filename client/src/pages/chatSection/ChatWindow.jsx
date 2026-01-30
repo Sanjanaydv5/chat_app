@@ -26,8 +26,8 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     const { theme } = useThemeStore();
     const { user } = useUserStore();
 
-    const { messages, loading, sendMessage, receiveMessage, fetchMessages, fetchConversations, setCurrentUser, conversations, isUserTyping, startTyping,
-         stopTyping, getUserLastSeen, addReaction, deleteMessage, markMessagesAsRead, isUserOnline, cleanup, initsocketListeners } = useChatStore();
+    const { messages, sendMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping,
+         stopTyping, getUserLastSeen, addReaction, deleteMessage, isUserOnline } = useChatStore();
     //get online status of user and last seen
     const online = isUserOnline(selectedContact?._id);
     const lastSeen = getUserLastSeen(selectedContact?._id);

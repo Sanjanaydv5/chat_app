@@ -4,6 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 
+import { toast } from 'react-toastify';
 import useLoginStore from '../../store/useLoginStore';
 import useUserStore from '../../store/useUserStore';
 import useThemeStore from '../../store/themeStore';
@@ -11,9 +12,7 @@ import countries from '../../utils/countries';
 import { sendOtp, verifyOtp, updateUserProfile } from '../../services/user.service';
 import { motion } from 'framer-motion';
 import { FaArrowLeft, FaChevronDown, FaPlus, FaUber, FaUser, FaWhatsapp } from 'react-icons/fa';
-import ProgressBar from 'react-bootstrap/ProgressBar';
 import Spinner from '../../utils/Spinner'
-import { ToastContainer, toast } from 'react-toastify';
 /* =======================
    Validation Schemas
 ======================= */
@@ -89,7 +88,7 @@ const Login = () => {
   } = useLoginStore();
 
   const { setUser } = useUserStore();
-  const { theme, toggleTheme } = useThemeStore();
+  const { theme } = useThemeStore();
   const navigate = useNavigate();
 
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -98,7 +97,6 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
   const [selectedAvatar, setSelectedAvatar] = useState(avatars[0]);
-  const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [error, setError] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
