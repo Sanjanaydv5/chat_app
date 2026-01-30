@@ -9,6 +9,12 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
+    // Add timeout and connection settings
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 5,
+    rateDelta: 1000,
+    rateLimit: 5,
 });
 
 transporter.verify((error, success) => {
@@ -20,14 +26,15 @@ transporter.verify((error, success) => {
 });
 
 const sendOtpToEmail = async (email, otp) => {
-      const html = `
+    try {
+        const html = `
     <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
       <h2 style="color: #075e54;">🔐 WhatsApp Web Verification</h2>
-      
+
       <p>Hi there,</p>
-      
+
       <p>Your one-time password (OTP) to verify your WhatsApp Web account is:</p>
-      
+
       <h1 style="background: #e0f7fa; color: #000; padding: 10px 20px; display: inline-block; border-radius: 5px; letter-spacing: 2px;">
         ${otp}
       </h1>
@@ -43,12 +50,21 @@ const sendOtpToEmail = async (email, otp) => {
       <small style="color: #777;">This is an automated message. Please do not reply.</small>
     </div>
   `;
-    await transporter.sendMail({
-        from: `"WhatsApp Web" <${process.env.EMAIL_USER}>`,
-        to: email,
-        subject: 'Your WhatsApp Web Verification OTP',
-        html: html,
-    });
+
+        const mailOptions = {
+            from: `"WhatsApp Web" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Your WhatsApp Web Verification OTP',
+            html: html,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email sent successfully:', info.messageId);
+        return info;
+    } catch (error) {
+        console.error('Failed to send email:', error);
+        throw new Error(`Email service failed: ${error.message}`);
+    }
 }
 
 
