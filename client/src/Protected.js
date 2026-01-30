@@ -12,11 +12,11 @@ export const ProtectedRoute = () => {
 
   useEffect(() => {
     console.log("ProtectedRoute: isAuthenticated=", isAuthenticated, "user=", user);
-    
+
     // Check if token exists
     const token = localStorage.getItem('token');
     console.log("ProtectedRoute: token=", token);
-    
+
     // If authenticated but no user data, force re-check (don't require token since cookies might work)
     if (isAuthenticated && !user) {
       console.log("ProtectedRoute: Authenticated but no user data, forcing check");
@@ -47,7 +47,7 @@ export const ProtectedRoute = () => {
     };
 
     verifyAuth();
-  }, [isAuthenticated, setUser, clearUser]);
+  }, [isAuthenticated, setUser, clearUser, user]);
 
   if (isChecking) return <Loader />;
 
