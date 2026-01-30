@@ -562,7 +562,7 @@ const Login = () => {
               />
               <label htmlFor='terms' className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
                 I agree to the {""}
-                <a href="" className="text-red-500 hover:underline">terms and conditions</a>
+                <button type="button" className="text-red-500 hover:underline bg-transparent border-none p-0 cursor-pointer">terms and conditions</button>
               </label>
               {profileErrors.agreed && (
                 <p className='text-red-500 text-sm mt-1'>{profileErrors.agreed.message}</p>

@@ -42,11 +42,11 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 fetchMessages(conversation._id)
             }
         }
-    }, [selectedContact, conversations])
+    }, [selectedContact, conversations, fetchMessages])
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [fetchConversations]);
 
     const scrollToBottom = () => {
         messageEndRef.current?.scrollIntoView({ behavior: "auto" })
@@ -72,7 +72,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 clearTimeout(typingTimeoutRef.current)
             }
         }
-    }, (message, selectedContact, startTyping, stopTyping))
+    }, [message, selectedContact, startTyping, stopTyping])
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
