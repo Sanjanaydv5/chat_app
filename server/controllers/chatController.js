@@ -1,4 +1,4 @@
-const conversation = require("../models/conversation");
+const conversation = require("../models/Conversation");
 const response = require("../utils/responseHandler");
 const Message = require("../models/Message");
 const { uploadFileToCloudinary } = require("../utils/cloudinaryUpload");

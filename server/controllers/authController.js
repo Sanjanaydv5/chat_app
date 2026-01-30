@@ -5,7 +5,7 @@ const response = require("../utils/responseHandler");
 const tiwilioService = require("../services/twilioService");
 const generateToken = require("../utils/generateToken");
 const { uploadFileToCloudinary } = require("../utils/cloudinaryUpload");
-const conversation = require("../models/conversation");
+const conversation = require("../models/Conversation");
 
 
 
