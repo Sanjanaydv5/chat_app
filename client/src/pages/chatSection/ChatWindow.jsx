@@ -254,7 +254,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                     <div ref={emojiPickerRef} className="absolute left-0 bottom-16 z-50">
                         <EmojiPicker
                         onEmojiClick={(emojiObject) => {
-                            setMessage((prev) => prev + emojiObject.activeSkinTone.emoji)
+                            setMessage((prev) => prev + emojiObject.emoji)
                             setShowEmojiPicker(false)
                         }}
                         theme={theme}/>

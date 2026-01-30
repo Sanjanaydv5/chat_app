@@ -24,7 +24,7 @@ export const initializeSocket = () => {
     socket.on("connect", () => {
         console.log("Connected to chat server", socket.id);
         if (user && user._id) {
-            socket.emit("user_connected", {userId: user._id});
+            socket.emit("user_connected", user._id);
         }
     });
 

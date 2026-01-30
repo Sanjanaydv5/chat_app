@@ -15,7 +15,7 @@ export const useChatStore = create((set, get) => ({
 
 
     //socket event listeners setup
-    initsocketListeners: () => {
+    initSocketListeners: () => {
         const socket = getSocket(); // Assume getSocket is a function that returns the socket instance
         if (!socket) return;
 
@@ -26,13 +26,52 @@ export const useChatStore = create((set, get) => ({
         socket.off('send_message');
         socket.off('message_error');
         socket.off('message_delete');
+        socket.off('message_read');
+        socket.off('reaction_update');
 
         //listen for incoming messages
         socket.on('receive_message', (message) => {
-            const { currentConversation, messages } = get();
-            if (currentConversation && message.conversationId === currentConversation.id) {
+            const { currentConversation, messages, currentUser } = get();
+            
+            // Add message if it doesn't already exist
+            const messageExists = messages.some((msg) => msg._id === message._id);
+            if (!messageExists) {
                 set({ messages: [...messages, message] });
+                
+                // Update conversations list with new message
+                set((state) => {
+                    const updatedConversations = state.conversations?.data?.map((conv) => {
+                        if (conv._id === message.conversation) {
+                            return {
+                                ...conv,
+                                lastMessage: message,
+                                unreadCount: message?.receiver?._id === currentUser?._id
+                                    ? (conv.unreadCount || 0) + 1
+                                    : conv.unreadCount || 0
+                            };
+                        }
+                        return conv;
+                    });
+
+                    return {
+                        conversations: {
+                            ...state.conversations,
+                            data: updatedConversations
+                        }
+                    };
+                });
             }
+        });
+
+        //listen for message read updates
+        socket.on('message_read', (updatedMessage) => {
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg._id === updatedMessage._id 
+                        ? { ...msg, messageStatus: updatedMessage.messageStatus } 
+                        : msg
+                )
+            }));
         });
 
         //conform message sent
@@ -128,7 +167,7 @@ export const useChatStore = create((set, get) => ({
             const { data } = await axiosInstance.get('/chats/conversations');
             set({ conversations: data, loading: false });
 
-            get().initsocketListeners();
+            get().initSocketListeners();
             return data;
         } catch (error) {
             set({ error: error?.response?.data?.message || error?.message, loading: false });
@@ -328,7 +367,7 @@ export const useChatStore = create((set, get) => ({
             socket.emit('add_reaction', {
                 messageId,
                 emoji,
-                userId: currentUser?._id
+                reactionUserId: currentUser?._id
             });
         }
     },
