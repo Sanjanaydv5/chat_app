@@ -109,7 +109,7 @@ export const useChatStore = create((set, get) => ({
                     socket.emit("get_user_status", otherUser._id, (status) => {
                         set((state) => {
                             const newOnlineUsers = new Map(state.onlineUsers);
-                            newOnlineUsers.set(state.userId, {
+                            newOnlineUsers.set(otherUser._id, {
                                 isOnline: status.isOnline,
                                 lastSeen: status.lastSeen,
                             });
@@ -167,6 +167,9 @@ export const useChatStore = create((set, get) => ({
         const media = formData.get("media");
         const content = formData.get("content");
         const messageStatus = formData.get("messageStatus");
+
+        const socket = getSocket();
+
         const { conversations } = get();
         let conversationId = null;
         if (conversations?.data?.length > 0) {
@@ -175,7 +178,7 @@ export const useChatStore = create((set, get) => ({
                 conv.participants.some((p) => p._id === receiverId));
             if (conversation) {
                 conversationId = conversation._id;
-                set({ currentConversation: conversationId })
+                set({ currentConversation: conversation._id })
             }
         }
         //temp message before actual response
@@ -195,25 +198,47 @@ export const useChatStore = create((set, get) => ({
     messages: [...state.messages, optimisticMessage]
 }));
         try {
-            const { data } = await axiosInstance.post("/chats/send-message", formData,
-                { headers: { "Content-Type": "multipart/form-data" } }
-            )
-            const messageData = data.data || data;
-            //replace optimistic message with real one
-            set((state) => ({
-                messages: state.messages.map((msg) =>
-                    msg._id === tempId ? messageData : msg)
-            }));
-            return messageData;
-        } catch (error) {
-            console.error("Error sending message", error);
-            set((state) => ({
-                messages: state.messages.map((msg) =>
-                    msg._id === tempId ? { ...msg, messageStatus: "failed" } : msg),
-                error: error?.response?.data?.message || error?.message,
-            }))
-            throw error;
+    const response = await axiosInstance.post(
+        "/chats/send-message",
+        formData,
+        {
+            headers: {
+                // Let axios set the boundary automatically
+                "Content-Type": "multipart/form-data",
+            },
         }
+    );
+
+    const messageData = response.data?.data ?? response.data;
+
+    // Replace optimistic message with real one
+    set((state) => ({
+        messages: state.messages.map((msg) =>
+            msg._id === tempId ? messageData : msg
+        ),
+        currentConversation: messageData.conversation ?? state.currentConversation,
+        error: null,
+    }));
+
+    return messageData;
+} catch (error) {
+    console.error("Error sending message", error);
+
+    set((state) => ({
+        messages: state.messages.map((msg) =>
+            msg._id === tempId
+                ? { ...msg, messageStatus: "failed" }
+                : msg
+        ),
+        error:
+            error?.response?.data?.message ||
+            error?.message ||
+            "Failed to send message",
+    }));
+
+    throw error;
+}
+
     },
     receiveMessage: (message) => {
         if (!message) return;

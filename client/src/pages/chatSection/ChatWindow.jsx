@@ -26,7 +26,8 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     const { theme } = useThemeStore();
     const { user } = useUserStore();
 
-    const { messages, sendMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping, stopTyping, getUserLastSeen, isUserOnline, addReaction, deleteMessage } = useChatStore();
+    const { messages, loading, sendMessage, receiveMessage, fetchMessages, fetchConversations, setCurrentUser, conversations, isUserTyping, startTyping,
+         stopTyping, getUserLastSeen, addReaction, deleteMessage, markMessagesAsRead, isUserOnline, cleanup, initsocketListeners } = useChatStore();
     //get online status of user and last seen
     const online = isUserOnline(selectedContact?._id);
     const lastSeen = getUserLastSeen(selectedContact?._id);
@@ -37,15 +38,15 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         if (selectedContact?._id && conversations?.data?.length > 0) {
             const conversation = conversations?.data?.find((conv) =>
                 conv.participants.some((participant) => participant._id === selectedContact?._id))
-            if (conversation?._id) {
+            if (conversation._id) {
                 fetchMessages(conversation._id)
             }
         }
-    }, [selectedContact, conversations, fetchMessages])
+    }, [selectedContact, conversations])
 
     useEffect(() => {
         fetchConversations();
-    }, [fetchConversations]);
+    }, []);
 
     const scrollToBottom = () => {
         messageEndRef.current?.scrollIntoView({ behavior: "auto" })
@@ -71,7 +72,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 clearTimeout(typingTimeoutRef.current)
             }
         }
-    }, [message, selectedContact, startTyping, stopTyping])
+    }, (message, selectedContact, startTyping, stopTyping))
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -87,6 +88,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     const handleSendMessage = async () => {
         if (!selectedContact) return;
         setFilePreview(null);
+        console.log("not found user to send message")
         try {
             const formData = new FormData();
 
@@ -212,9 +214,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                 {Object.entries(groupMessages).map(([date, msgs]) => (
                     <React.Fragment key={date}>
                         {renderDateSeparator(new Date(date))}
-                        {msgs.filter(
-                            (msg) => msg.message === selectedContact?._id.message?._id
-                        ).map((msg) => (
+                        {msgs.map((msg) => (
                             <MessageBubble
                                 key={msg._id || msg.tempId}
                                 message={msg}

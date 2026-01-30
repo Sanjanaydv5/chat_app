@@ -2,13 +2,16 @@ const conversation = require("../models/conversation");
 const response = require("../utils/responseHandler");
 const Message = require("../models/Message");
 const { uploadFileToCloudinary } = require("../utils/cloudinaryUpload");
+const mongoose = require('mongoose');
 
 exports.sendMessage = async (req, res) => {
     // Implementation for sending a message
     try {
         const { senderId, receiverId, content, messageStatus } = req.body;
         const file = req.file;
-        const participants = [senderId, receiverId].sort(); // Ensure consistent ordering
+        const senderObjectId = new mongoose.Types.ObjectId(senderId);
+        const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
+        const participants = [senderObjectId, receiverObjectId].sort(); // Ensure consistent ordering
         //check if conversation exists
         let chatConversation = await conversation.findOne({ participants: participants });
         if (!chatConversation) {
@@ -42,8 +45,8 @@ exports.sendMessage = async (req, res) => {
         }
         const message = new Message({
             conversation: chatConversation._id,
-            sender: senderId,
-            receiver: receiverId,
+            sender: senderObjectId,
+            receiver: receiverObjectId,
             content,
             contentType,
             imageOrVideoUrl,
@@ -64,7 +67,7 @@ exports.sendMessage = async (req, res) => {
 
             //emit socket event
             if(req.io && req.socketUserMap){
-                const receiverSocketId = req.socketUserMap.get(receiverId);
+                const receiverSocketId = req.socketUserMap.get(receiverId.toString());
                 if(receiverSocketId){
                     req.io.to(receiverSocketId).emit("receive_message",populatedMessage);
                     message.messageStatus = "delivered";
@@ -90,7 +93,7 @@ exports.getConversation = async (req, res) => {
             .populate({ path: "lastMessage", populate: { path: "sender receiver", select: "username profilePicture" } })
             .sort({ updatedAt: -1 });
 
-        return response(res, 200, true, "Conversations fetched successfully", conversation);
+        return response(res, 200, true, "Conversations fetched successfully", conversations);
     } catch (error) {
         console.error("Error fetching conversations:", error);
         return response(res, 500, false, "Internal server error");
