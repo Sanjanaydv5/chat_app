@@ -9,6 +9,15 @@ exports.sendMessage = async (req, res) => {
     try {
         const { senderId, receiverId, content, messageStatus } = req.body;
         const file = req.file;
+        
+        // Validate ObjectId format
+        if (!senderId || !mongoose.Types.ObjectId.isValid(senderId)) {
+            return response(res, 400, false, "Invalid sender ID");
+        }
+        if (!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
+            return response(res, 400, false, "Invalid receiver ID");
+        }
+        
         const senderObjectId = new mongoose.Types.ObjectId(senderId);
         const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
         const participants = [senderObjectId, receiverObjectId].sort(); // Ensure consistent ordering
@@ -79,7 +88,9 @@ exports.sendMessage = async (req, res) => {
 
     } catch (error) {
         console.error("Error sending message:", error);
-        return response(res, 500, false, "Internal server error");
+        // Log more details for debugging
+        console.error("Request body:", req.body);
+        return response(res, 500, false, "Internal server error: " + error.message);
     }
 
 };
@@ -105,6 +116,11 @@ exports.getMessages = async (req, res) => {
     const { conversationId } = req.params;
     const userId = req.user.userId;
     try {
+        // Validate conversationId format
+        if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
+            return response(res, 400, false, "Invalid conversation ID");
+        }
+        
         const chatConversation = await conversation.findById(conversationId);
         if (!chatConversation || !chatConversation.participants.includes(userId)) {
             return response(res, 404, false, "Conversation not found");
@@ -132,6 +148,17 @@ exports.markAsRead = async (req, res) => {
     const { messageIds } = req.body;
     const userId = req.user.userId;
     try {
+        // Validate messageIds
+        if (!messageIds || !Array.isArray(messageIds)) {
+            return response(res, 400, false, "Invalid message IDs");
+        }
+        
+        // Validate each messageId format
+        const invalidIds = messageIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+        if (invalidIds.length > 0) {
+            return response(res, 400, false, "Invalid message ID format");
+        }
+        
         //get relevant messages to determine senders      
         let messages = await Message.find({ _id: { $in: messageIds }, receiver: userId });
         await Message.updateMany(
@@ -165,6 +192,11 @@ exports.deleteMessage = async (req, res) => {
     const { messageId } = req.params;
     const userId = req.user.userId;
     try {
+        // Validate messageId format
+        if (!messageId || !mongoose.Types.ObjectId.isValid(messageId)) {
+            return response(res, 400, false, "Invalid message ID");
+        }
+        
         const message = await Message.findById(messageId);
         if (!message) {
             return response(res, 404, false, "Message not found");
