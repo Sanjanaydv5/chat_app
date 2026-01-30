@@ -17,7 +17,7 @@ const app = express();
 
 // --- 1. FIXED CORS CONFIGURATION ---
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:3000', 
+  origin: process.env.CLIENT_URL || '"https://sanjana-chat-app.vercel.app"', 
   credentials: true, // Note: lowercase 'c' is required
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
