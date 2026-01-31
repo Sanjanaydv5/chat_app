@@ -27,6 +27,7 @@ const HomePage = () => {
         fetchUsers(); // Correctly calling the local wrapper function
     }, []);
 
+
     return (
         <Layout contacts={allUsers}>
             <motion.div
