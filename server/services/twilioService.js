@@ -9,7 +9,7 @@ const serviceSid = process.env.TWILLO_SERVICE_SID;
 // Create a Twilio client
 const client = twillo(accountSid, authToken);
 
-// send verification code to user's phone number
+// send verification code to user's phone number//
 const sendOtpToPhoneNumber = async (phoneNumber) => {
   try {
     console.log('Sending OTP to phone number:', phoneNumber);

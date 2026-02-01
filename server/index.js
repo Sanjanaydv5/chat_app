@@ -56,11 +56,11 @@ app.use('/api/status', statusRoute);
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
+  res.status(404).json({ error: "Route not found" });s
 });
 
 // --- 4. START SERVER ---
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port... ${PORT}`);
 });
 

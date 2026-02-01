@@ -58,7 +58,7 @@ const initializeSocket = (server) => {
             }
         });
 
-        // ================= TYPING START =================
+        // ================= TYPING START =================//
         socket.on("typing_start", ({ conversationId, receiverId }) => {
             if (!userId) return;
 

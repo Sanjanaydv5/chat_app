@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GMAIL_APP_PASSWORD,
   },
 });
-
+//hii
 // verify SMTP connection (runs on server start)
 transporter.verify((error) => {
   if (error) {
