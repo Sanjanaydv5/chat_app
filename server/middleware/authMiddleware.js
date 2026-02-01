@@ -30,5 +30,5 @@ const authMiddleware = (req, res, next) => {
     return response(res, 401, false, "Invalid authentication token");
   }
 };
-
+//
 module.exports = authMiddleware;

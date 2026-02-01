@@ -70,7 +70,7 @@ const sendOTP = async (req, res) => {
         } else {
             console.log("sendOTP: Using existing user:", user._id);
         }
-
+//
         try {
             await tiwilioService.sendOtpToPhoneNumber(fullPhoneNumber);
         } catch (twilioError) {
