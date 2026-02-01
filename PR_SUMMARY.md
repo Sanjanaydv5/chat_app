@@ -14,7 +14,7 @@ This PR resolves all Socket.IO issues and transforms the chat app into a fully f
 **Result**: All users now connect successfully
 
 ### 2. Messages Not Appearing in Real-Time ❌ → ✅
-**Problem**: Messages had to be manually refreshed
+**Problem**: Messages had to be manually refreshed.
 **Solution**: Fixed receive_message socket handler
 **Result**: Messages appear instantly (< 1 second)
 
