@@ -4,7 +4,7 @@ import useUserStore from "../store/useUserStore";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-const ChatDetails = () => {
+const UserDetails = () => {
   const navigate = useNavigate();
   const { setUser } = useUserStore();
 
@@ -195,4 +195,4 @@ const ChatDetails = () => {
   );
 };
 
-export default ChatDetails;
+export default UserDetails;
