@@ -167,6 +167,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         }
     }
 
+    // eslint-disable-next-line no-unused-vars
     const cancelVoiceNote = () => {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();

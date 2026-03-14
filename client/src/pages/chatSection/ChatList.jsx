@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaSearch, FaUserPlus, FaTimes } from "react-icons/fa";
-import { toast } from "react-toastify";
 
 import { useChatStore } from "../../store/chatStore";
 import useLayoutStore from "../../store/layoutStore";
 import useThemeStore from "../../store/themeStore";
 import useUserStore from "../../store/useUserStore";
-import { sendOtp } from "../../services/user.service";
 import formatTimeStamp from "../../utils/formatTime";
 
 const ChatList = ({ contacts = [] }) => {
@@ -15,16 +13,13 @@ const ChatList = ({ contacts = [] }) => {
   const selectedContact = useLayoutStore((state) => state.selectedContact);
   const { theme } = useThemeStore();
   const { user: currentUser } = useUserStore();
+  // eslint-disable-next-line no-unused-vars
   const { conversations, fetchConversations, createGroupConversation } = useChatStore();
 
   const [searchTerms, setSearchTerms] = useState("");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [selectedUserIds, setSelectedUserIds] = useState([]);
-  const [groupName, setGroupName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [invitePhone, setInvitePhone] = useState("");
-  const [invitePhoneSuffix, setInvitePhoneSuffix] = useState("");
-  const [searchUserTerm, setSearchUserTerm] = useState("");
 
   useEffect(() => {
     fetchConversations();
