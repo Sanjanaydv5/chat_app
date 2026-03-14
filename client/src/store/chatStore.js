@@ -25,7 +25,7 @@ export const useChatStore = create((set, get) => ({
         socket.off('user_status');
         socket.off('send_message');
         socket.off('message_error');
-        socket.off('message_delete');
+        socket.off('message_deleted');
         socket.off('message_read');
         socket.off('reaction_update');
 
@@ -111,7 +111,7 @@ export const useChatStore = create((set, get) => ({
         });
 
         //handle remove message from local state
-        socket.on('message_deleted', ({ deletedMessageId }) => {
+        socket.on('message_deleted', (deletedMessageId) => {
             set((state) => ({
                 messages: state.messages.filter((msg) => msg._id !== deletedMessageId)
             }));

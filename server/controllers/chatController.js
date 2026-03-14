@@ -35,7 +35,7 @@ exports.sendMessage = async (req, res) => {
         } else if (Array.isArray(participants) && participants.length > 1) {
             const parsedParticipants = [...new Set(participants.concat(senderId))].filter(Boolean);
             const participantIds = parsedParticipants
-                .map((id) => mongoose.Types.ObjectId(id));
+                .map((id) => new mongoose.Types.ObjectId(id));
 
             // look for exact match by size and members
             chatConversation = await conversation.findOne({
@@ -59,11 +59,13 @@ exports.sendMessage = async (req, res) => {
                 return response(res, 400, false, "Invalid receiverId format");
             }
             receiverObjectId = new mongoose.Types.ObjectId(receiverId);
-            const sortedPair = [senderObjectId, receiverObjectId].sort();
-            chatConversation = await conversation.findOne({ participants: sortedPair, isGroup: false });
+            chatConversation = await conversation.findOne({
+                participants: { $all: [senderObjectId, receiverObjectId], $size: 2 },
+                isGroup: false
+            });
             if (!chatConversation) {
                 chatConversation = new conversation({
-                    participants: sortedPair,
+                    participants: [senderObjectId, receiverObjectId],
                     isGroup: false,
                     unreadCount: 0
                 });
@@ -180,7 +182,7 @@ exports.getMessages = async (req, res) => {
     console.log("getMessages: userId=", userId, "conversationId=", conversationId);
     try {
         const chatConversation = await conversation.findById(conversationId);
-        if (!chatConversation || !chatConversation.participants.includes(userId)) {
+        if (!chatConversation || !chatConversation.participants.some(p => p.toString() === userId)) {
             console.log("getMessages: Conversation not found or user not participant");
             return response(res, 404, false, "Conversation not found");
         }
@@ -254,9 +256,13 @@ exports.deleteMessage = async (req, res) => {
             if(req.io && req.socketUserMap){
                 const receiverSocketId = req.socketUserMap.get(message.receiver.toString());
                 if(receiverSocketId){
-                    req.io.to(receiverSocketId).emit("message_deleted",messageId)
+                    req.io.to(receiverSocketId).emit("message_deleted", messageId)
                 }
-                
+                // Also notify sender (for multi-device support)
+                const senderSocketId = req.socketUserMap.get(userId);
+                if(senderSocketId){
+                    req.io.to(senderSocketId).emit("message_deleted", messageId)
+                }
             }
 
         return response(res, 200, true, "Message deleted successfully");

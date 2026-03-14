@@ -43,6 +43,10 @@ const sendOTP = async (req, res) => {
                 await sendOtpToEmail(email, otp);
             } catch (mailError) {
                 console.error("Email service failed:", mailError);
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log(`\n[DEV] OTP for ${email}: ${otp}\n`);
+                    return response(res, 200, true, "OTP sent (check server console in dev mode)", { email });
+                }
                 return response(res, 500, false, "Failed to send OTP email");
             }
 
@@ -70,12 +74,27 @@ const sendOTP = async (req, res) => {
         } else {
             console.log("sendOTP: Using existing user:", user._id);
         }
-//
-        try {
-            await tiwilioService.sendOtpToPhoneNumber(fullPhoneNumber);
-        } catch (twilioError) {
-            console.error("Twilio error:", twilioError);
-            return response(res, 500, false, "Failed to send OTP to phone");
+
+        const twilioConfigured = !!(process.env.TWILLO_ACCOUNT_SID &&
+                                    process.env.TWILLO_AUTH_TOKEN &&
+                                    process.env.TWILLO_SERVICE_SID);
+        if (twilioConfigured) {
+            try {
+                await tiwilioService.sendOtpToPhoneNumber(fullPhoneNumber);
+            } catch (twilioError) {
+                console.error("Twilio error:", twilioError);
+                return response(res, 500, false, "Failed to send OTP to phone");
+            }
+        } else {
+            if (process.env.NODE_ENV !== 'production') {
+                // Store OTP in DB for dev-mode verification (when Twilio is not configured)
+                user.emailOtp = otp;
+                user.emailOtpExpiry = expiry;
+                await user.save();
+                console.log(`\n[DEV] OTP for ${fullPhoneNumber}: ${otp}\n`);
+                return response(res, 200, true, "OTP sent to phone successfully");
+            }
+            return response(res, 500, false, "SMS service not configured");
         }
 
         await user.save();
@@ -128,9 +147,26 @@ const verifyOTP = async (req, res) => {
                 return response(res, 404, false, "User not found");
             }
 
-            const result = await tiwilioService.verifyOtp(fullPhoneNumber, otp);
-            if (result.status !== "approved") {
-                return response(res, 400, false, "Invalid or expired OTP");
+            const twilioConfigured = !!(process.env.TWILLO_ACCOUNT_SID &&
+                                        process.env.TWILLO_AUTH_TOKEN &&
+                                        process.env.TWILLO_SERVICE_SID);
+            if (twilioConfigured) {
+                const result = await tiwilioService.verifyOtp(fullPhoneNumber, otp);
+                if (result.status !== "approved") {
+                    return response(res, 400, false, "Invalid or expired OTP");
+                }
+            } else {
+                // Dev-mode fallback: verify against DB-stored OTP
+                const now = new Date();
+                if (
+                    !user.emailOtp ||
+                    String(user.emailOtp) !== String(otp) ||
+                    now > new Date(user.emailOtpExpiry)
+                ) {
+                    return response(res, 400, false, "Invalid or expired OTP");
+                }
+                user.emailOtp = null;
+                user.emailOtpExpiry = null;
             }
 
             user.isVerified = true;
@@ -140,6 +176,7 @@ const verifyOTP = async (req, res) => {
         const token = generateToken(user._id);
         res.cookie("auth_token", token, {
             httpOnly: true,
+            sameSite: 'strict',
             maxAge: 1000 * 60 * 60 * 24 * 365
         });
 
@@ -184,6 +221,7 @@ const updateProfile = async (req, res) => {
         const token = generateToken(user._id);
         res.cookie("auth_token", token, {
             httpOnly: true,
+            sameSite: 'strict',
             maxAge: 1000 * 60 * 60 * 24 * 365
         });
         
