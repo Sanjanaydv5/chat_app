@@ -19,8 +19,8 @@ const app = express();
 
 // --- 1. FIXED CORS CONFIGURATION ---
 const corsOptions = {
-  origin: process.env.CLIENT_URL || '"https://sanjana-chat-app.vercel.app"', 
-  credentials: true, // Note: lowercase 'c' is required
+  origin: process.env.CLIENT_URL || 'https://sanjana-chat-app.vercel.app',
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
 
@@ -56,7 +56,7 @@ app.use('/api/status', statusRoute);
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });s
+  res.status(404).json({ error: "Route not found" });
 });
 
 // --- 4. START SERVER ---

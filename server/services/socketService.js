@@ -50,14 +50,6 @@ const initializeSocket = (server) => {
             });
         });
 
-        // ================= SEND MESSAGE =================
-        socket.on("send_message", (message) => {
-            const receiverSocketId = onlineUsers.get(message.receiver?._id);
-            if (receiverSocketId) {
-                io.to(receiverSocketId).emit("receive_message", message);
-            }
-        });
-
         // ================= TYPING START =================//
         socket.on("typing_start", ({ conversationId, receiverId }) => {
             if (!userId) return;
