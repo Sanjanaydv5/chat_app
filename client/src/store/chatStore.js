@@ -220,30 +220,32 @@ export const useChatStore = create((set, get) => ({
         console.log("chatStore sendMessage called");
         const senderId = formData.get("senderId");
         const receiverId = formData.get("receiverId");
+        const conversationIdFromForm = formData.get("conversationId");
         const media = formData.get("media");
         const content = formData.get("content");
         const messageStatus = formData.get("messageStatus");
-        
-        console.log("FormData values:", { senderId, receiverId, content, messageStatus, media: media?.name });
 
+        console.log("FormData values:", { senderId, receiverId, conversationId: conversationIdFromForm, content, messageStatus, media: media?.name });
 
         const { conversations } = get();
-        let conversationId = null;
-        if (conversations?.data?.length > 0) {
-            const conversation = conversations.data.find((conv) =>
+        let conversationId = conversationIdFromForm || null;
+
+        if (!conversationId && conversations?.data?.length > 0 && receiverId) {
+            const existingConversation = conversations.data.find((conv) =>
                 conv.participants.some((p) => p._id === senderId) &&
-                conv.participants.some((p) => p._id === receiverId));
-            if (conversation) {
-                conversationId = conversation._id;
-                set({ currentConversation: conversation._id })
+                conv.participants.some((p) => p._id === receiverId) && !conv.isGroup);
+            if (existingConversation) {
+                conversationId = existingConversation._id;
+                set({ currentConversation: existingConversation._id });
             }
         }
         //temp message before actual response
         const tempId = `temp-${Date.now()}`;
+        const isGroupConversation = Boolean(conversationIdFromForm);
         const optimisticMessage = {
             _id: tempId,
             sender: { _id: senderId },
-            receiver: { _id: receiverId },
+            receiver: receiverId ? { _id: receiverId } : null,
             conversation: conversationId,
             mediaUrl: media && typeof media !== 'string' ? URL.createObjectURL(media) : null,
             fileName: media && typeof media !== 'string' ? media.name : null,
@@ -259,6 +261,7 @@ export const useChatStore = create((set, get) => ({
                 : (content ? "text" : "text"),
             createdAt: new Date().toISOString(),
             messageStatus,
+            isGroup: isGroupConversation,
         };
         set((state) => ({
     messages: [...state.messages, optimisticMessage]
@@ -308,6 +311,19 @@ export const useChatStore = create((set, get) => ({
     throw error;
 }
 
+    },
+    createGroupConversation: async ({ groupName, participantIds }) => {
+        try {
+            const { data } = await axiosInstance.post('/chats/conversations', {
+                groupName,
+                participants: participantIds,
+            });
+            await get().fetchConversations();
+            return data;
+        } catch (error) {
+            console.error('Error creating group conversation:', error);
+            throw error?.response?.data || error?.message || 'Failed to create group conversation';
+        }
     },
     receiveMessage: (message) => {
         if (!message) return;

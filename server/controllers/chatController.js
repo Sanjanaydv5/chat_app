@@ -204,6 +204,52 @@ exports.getMessages = async (req, res) => {
     }
 };
 
+// create group conversation and return it
+exports.createGroupConversation = async (req, res) => {
+    const { groupName, participants } = req.body;
+    const userId = req.user.id;
+
+    try {
+        if (!groupName || !Array.isArray(participants) || participants.length < 1) {
+            return response(res, 400, false, "Group name and at least one participant are required");
+        }
+
+        const participantIds = [...new Set(participants.filter((p) => mongoose.Types.ObjectId.isValid(p)))];
+        if (!participantIds.includes(userId)) participantIds.push(userId);
+
+        // Check if group already exists with same participants and groupName
+        let existingGroup = await conversation.findOne({
+            isGroup: true,
+            name: groupName,
+            participants: { $size: participantIds.length, $all: participantIds },
+        });
+
+        if (existingGroup) {
+            existingGroup = await conversation.findById(existingGroup._id)
+                .populate("participants", "username profilePicture");
+            return response(res, 200, true, "Group already exists", existingGroup);
+        }
+
+        const groupConversation = new conversation({
+            name: groupName,
+            isGroup: true,
+            admin: userId,
+            participants: participantIds,
+            unreadCount: 0,
+        });
+
+        await groupConversation.save();
+
+        const populatedGroup = await conversation.findById(groupConversation._id)
+            .populate("participants", "username profilePicture");
+
+        return response(res, 201, true, "Group created successfully", populatedGroup);
+    } catch (error) {
+        console.error("Error creating group conversation:", error);
+        return response(res, 500, false, "Internal server error");
+    }
+};
+
 exports.markAsRead = async (req, res) => {
     const { messageIds } = req.body;
     const userId = req.user.id;

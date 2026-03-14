@@ -41,15 +41,26 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
 
     const { messages, sendMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping,
          stopTyping, getUserLastSeen, addReaction, deleteMessage, isUserOnline } = useChatStore();
-    //get online status of user and last seen
-    const online = isUserOnline(selectedContact?._id);
-    const lastSeen = getUserLastSeen(selectedContact?._id);
-    const isTyping = isUserTyping(selectedContact?._id);
+    // group chat doesn't have single online/typing status
+    const isGroupChat = selectedContact?.isGroup;
+    const online = !isGroupChat && isUserOnline(selectedContact?._id);
+    const lastSeen = !isGroupChat ? getUserLastSeen(selectedContact?._id) : null;
+    const isTyping = !isGroupChat && isUserTyping(selectedContact?._id);
 
 
     useEffect(() => {
-        console.log("ChatWindow: selectedContact changed:", selectedContact?._id);
+        console.log("ChatWindow: selectedContact changed:", selectedContact);
         console.log("ChatWindow: conversations:", conversations);
+
+        const conversationId = selectedContact?.conversation?._id ||
+            (selectedContact?.isGroup ? selectedContact?._id : null);
+
+        if (conversationId) {
+            console.log("ChatWindow: Calling fetchMessages for:", conversationId);
+            fetchMessages(conversationId);
+            return;
+        }
+
         if (selectedContact?._id && conversations?.data?.length > 0) {
             const conversation = conversations?.data?.find((conv) =>
                 conv.participants.some((participant) => participant._id === selectedContact?._id));
@@ -194,7 +205,11 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
             const formData = new FormData();
 
             formData.append("senderId", user._id);
-            formData.append("receiverId", selectedContact._id);
+            if (isGroupChat) {
+                formData.append("conversationId", selectedContact._id);
+            } else {
+                formData.append("receiverId", selectedContact._id);
+            }
 
             const status = online ? "delivered" : "sent";
             formData.append("messageStatus", status);

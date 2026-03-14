@@ -7,6 +7,7 @@ const router = express.Router();
 
 // Route to send a message
 router.post('/send-message', authMiddleware, multerMiddleware, chatController.sendMessage);
+router.post('/conversations', authMiddleware, chatController.createGroupConversation);
 router.get('/conversations', authMiddleware, chatController.getConversation);
 router.get('/conversations/:conversationId/messages', authMiddleware, chatController.getMessages);
 router.put('/messages/read', authMiddleware, chatController.markAsRead);

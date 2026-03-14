@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaSearch, FaUserPlus, FaTimes } from "react-icons/fa";
+import { toast } from "react-toastify";
 
+import { useChatStore } from "../../store/chatStore";
 import useLayoutStore from "../../store/layoutStore";
 import useThemeStore from "../../store/themeStore";
 import useUserStore from "../../store/useUserStore";
+import { sendOtp } from "../../services/user.service";
 import formatTimeStamp from "../../utils/formatTime";
 
 const ChatList = ({ contacts = [] }) => {
@@ -12,14 +15,51 @@ const ChatList = ({ contacts = [] }) => {
   const selectedContact = useLayoutStore((state) => state.selectedContact);
   const { theme } = useThemeStore();
   const { user: currentUser } = useUserStore();
+  const { conversations, fetchConversations, createGroupConversation } = useChatStore();
 
   const [searchTerms, setSearchTerms] = useState("");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [groupName, setGroupName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
+  const [invitePhoneSuffix, setInvitePhoneSuffix] = useState("");
+  const [searchUserTerm, setSearchUserTerm] = useState("");
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
   const filteredContacts = (contacts || []).filter((contact) =>
     contact?.username?.toLowerCase().includes(searchTerms.toLowerCase()) &&
     contact?._id !== currentUser?._id
   );
+
+  const conversationEntries = (conversations?.data || []).map((conv) => {
+    if (conv.isGroup) {
+      return {
+        _id: conv._id,
+        isGroup: true,
+        username: conv.name || "Group Chat",
+        profilePicture: "https://ui-avatars.com/api/?name=" + encodeURIComponent(conv.name || "Group Chat"),
+        conversation: conv,
+      };
+    }
+    const otherUser = conv.participants.find((p) => p._id !== currentUser?._id);
+    if (!otherUser) return null;
+    return {
+      ...otherUser,
+      _id: otherUser._id,
+      isGroup: false,
+      conversation: conv,
+    };
+  }).filter(Boolean);
+
+  const missingContacts = filteredContacts.filter((contact) =>
+    !conversationEntries.some((entry) => !entry.isGroup && entry._id === contact._id)
+  );
+
+  const entries = [...conversationEntries, ...missingContacts];
 
   return (
     <div className={`w-full h-screen flex flex-col border-r transition-all duration-300 ${
@@ -59,61 +99,55 @@ const ChatList = ({ contacts = [] }) => {
 
       {/* --- CHAT LIST --- */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {filteredContacts.length > 0 ? (
-          filteredContacts.map((contact) => (
-            <motion.div
-              key={contact._id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              onClick={() => setSelectedContact(contact)}
-              className={`flex items-center p-4 mx-2 mb-1 rounded-2xl cursor-pointer transition-all duration-200 ${
-                selectedContact?._id === contact._id
-                  ? (theme === "dark" ? "bg-[#2a3942]" : "bg-gray-200")
-                  : (theme === "dark" ? "hover:bg-[#202c33]" : "hover:bg-gray-50")
-              }`}
-            >
-              {/* Profile Image with Online Indicator */}
-              <div className="relative">
-                <img
-                  src={contact?.profilePicture || "https://ui-avatars.com/api/?name=" + contact.username}
-                  alt={contact?.username}
-                  className="w-12 h-12 rounded-full object-cover shadow-sm"
-                />
-                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#111b21] rounded-full"></div>
-              </div>
-
-              <div className="ml-4 flex-1 truncate">
-                <div className="flex justify-between items-baseline">
-                  <h3 className={`font-semibold text-[15px] ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}>
-                    {contact?.username}
-                  </h3>
-                  <span className="text-[11px] text-gray-500 font-medium">
-                    {contact?.conversation?.lastMessage?.createdAt 
-                      ? formatTimeStamp(contact.conversation.lastMessage.createdAt)
-                      : "New"}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center mt-0.5">
-                  <p className={`text-sm truncate pr-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                    {contact?.conversation?.lastMessage?.content || "Tap to start chatting"}
-                  </p>
-                  {contact?.conversation?.unreadCount > 0 && (
-                    <span className="bg-green-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full">
-                      {contact.conversation.unreadCount}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))
-        ) : (
+        {entries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 px-10 text-center">
             <div className="p-4 bg-gray-100 dark:bg-[#202c33] rounded-full mb-4">
               <FaSearch className="text-gray-400 text-2xl" />
             </div>
             <p className="text-gray-500 text-sm">No conversations found matching "{searchTerms}"</p>
           </div>
+        ) : (
+          entries.map((entry) => (
+            <motion.div
+              key={entry._id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={() => setSelectedContact(entry)}
+              className={`flex items-center p-4 mx-2 mb-1 rounded-2xl cursor-pointer transition-all duration-200 ${
+                selectedContact?._id === entry._id
+                  ? (theme === "dark" ? "bg-[#2a3942]" : "bg-gray-200")
+                  : (theme === "dark" ? "hover:bg-[#202c33]" : "hover:bg-gray-50")
+              }`}>
+              <div className="relative">
+                <img
+                  src={entry.profilePicture || "https://ui-avatars.com/api/?name=" + (entry.username || "User")}
+                  alt={entry.username}
+                  className="w-12 h-12 rounded-full object-cover shadow-sm"
+                />
+                {!entry.isGroup && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#111b21] rounded-full"></div>}
+              </div>
+              <div className="ml-4 flex-1 truncate">
+                <div className="flex justify-between items-baseline">
+                  <h3 className={`font-semibold text-[15px] ${theme === "dark" ? "text-gray-100" : "text-gray-900"}`}>
+                    {entry.username}
+                  </h3>
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    {entry.conversation?.lastMessage?.createdAt ? formatTimeStamp(entry.conversation.lastMessage.createdAt) : "New"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mt-0.5">
+                  <p className={`text-sm truncate pr-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                    {entry.conversation?.lastMessage?.content || "Tap to start chatting"}
+                  </p>
+                  {entry.conversation?.unreadCount > 0 && (
+                    <span className="bg-green-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full">
+                      {entry.conversation.unreadCount}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))
         )}
       </div>
 
