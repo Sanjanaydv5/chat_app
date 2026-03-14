@@ -32,13 +32,22 @@ export const useChatStore = create((set, get) => ({
         //listen for incoming messages
         socket.on('receive_message', (message) => {
             const { currentConversation, messages, currentUser } = get();
-            
+
+            // Show desktop notification only if user has granted permission
+            if (window.Notification && Notification.permission === 'granted') {
+                if (message.conversation !== currentConversation) {
+                    const title = message.sender?.username || 'New message';
+                    const body = message.contentType === 'text' ? message.content || 'Sent a message' : `Sent a ${message.contentType}`;
+                    new Notification(title, { body });
+                }
+            }
+
             // Add message if it doesn't already exist and belongs to current conversation
             const messageExists = messages.some((msg) => msg._id === message._id);
             if (!messageExists && message.conversation === currentConversation) {
                 set({ messages: [...messages, message] });
             }
-            
+
             // Always update conversations list with new message
             set((state) => {
                 const updatedConversations = state.conversations?.data?.map((conv) => {
@@ -236,10 +245,19 @@ export const useChatStore = create((set, get) => ({
             sender: { _id: senderId },
             receiver: { _id: receiverId },
             conversation: conversationId,
-            imageOrVideoUrl: media && typeof media !== 'string' ? URL.createObjectURL(media) : null,
-            content:content,
-            contentType : media ? media.type.startsWith("image") ? "image" : "video" : "text",
-            createdAt : new Date().toISOString(),
+            mediaUrl: media && typeof media !== 'string' ? URL.createObjectURL(media) : null,
+            fileName: media && typeof media !== 'string' ? media.name : null,
+            content: content,
+            contentType: media
+                ? media.type.startsWith("image/")
+                    ? "image"
+                    : media.type.startsWith("video/")
+                        ? "video"
+                        : media.type.startsWith("audio/")
+                            ? "audio"
+                            : "file"
+                : (content ? "text" : "text"),
+            createdAt: new Date().toISOString(),
             messageStatus,
         };
         set((state) => ({

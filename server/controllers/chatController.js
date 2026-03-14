@@ -10,106 +10,141 @@ exports.sendMessage = async (req, res) => {
         console.log("sendMessage: req.body =", req.body);
         console.log("sendMessage: req.file =", req.file);
         
-        const { senderId, receiverId, content, messageStatus } = req.body;
+        const { senderId, receiverId, conversationId, participants, content, messageStatus, groupName } = req.body;
         const file = req.file;
-        
-        // Validate senderId and receiverId
-        if (!senderId || !receiverId) {
-            console.error("sendMessage: Missing senderId or receiverId");
-            return response(res, 400, false, "SenderId and ReceiverId are required");
+
+        if (!senderId || !mongoose.Types.ObjectId.isValid(senderId)) {
+            console.error("sendMessage: Missing or invalid senderId", senderId);
+            return response(res, 400, false, "Valid senderId is required");
         }
-        
-        // Validate if they are valid ObjectId strings
-        if (!mongoose.Types.ObjectId.isValid(senderId)) {
-            console.error("sendMessage: Invalid senderId format:", senderId);
-            return response(res, 400, false, "Invalid senderId format");
-        }
-        
-        if (!mongoose.Types.ObjectId.isValid(receiverId)) {
-            console.error("sendMessage: Invalid receiverId format:", receiverId);
-            return response(res, 400, false, "Invalid receiverId format");
-        }
-        
-        console.log("sendMessage: Creating ObjectIds...");
+
         const senderObjectId = new mongoose.Types.ObjectId(senderId);
-        const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
-        const participants = [senderObjectId, receiverObjectId].sort(); // Ensure consistent ordering
-        //check if conversation exists
-        let chatConversation = await conversation.findOne({ participants: participants });
-        if (!chatConversation) {
-            //create new conversation
-            chatConversation = new conversation({ participants, messages: [] });
-            await chatConversation.save();
+        let chatConversation;
+        let receiverObjectId = null;
+
+        // Resolve conversation: explicit id > group participants > one-to-one receiverId
+        if (conversationId) {
+            if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+                return response(res, 400, false, "Invalid conversationId");
+            }
+
+            chatConversation = await conversation.findById(conversationId);
+            if (!chatConversation) {
+                return response(res, 404, false, "Conversation not found");
+            }
+        } else if (Array.isArray(participants) && participants.length > 1) {
+            const parsedParticipants = [...new Set(participants.concat(senderId))].filter(Boolean);
+            const participantIds = parsedParticipants
+                .map((id) => mongoose.Types.ObjectId(id));
+
+            // look for exact match by size and members
+            chatConversation = await conversation.findOne({
+                isGroup: true,
+                participants: { $size: participantIds.length, $all: participantIds }
+            });
+
+            if (!chatConversation) {
+                chatConversation = new conversation({
+                    isGroup: true,
+                    name: groupName || "New Group",
+                    admin: senderObjectId,
+                    participants: participantIds,
+                    unreadCount: 0
+                });
+                await chatConversation.save();
+            }
+        } else if (receiverId) {
+            if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+                console.error("sendMessage: Invalid receiverId format:", receiverId);
+                return response(res, 400, false, "Invalid receiverId format");
+            }
+            receiverObjectId = new mongoose.Types.ObjectId(receiverId);
+            const sortedPair = [senderObjectId, receiverObjectId].sort();
+            chatConversation = await conversation.findOne({ participants: sortedPair, isGroup: false });
+            if (!chatConversation) {
+                chatConversation = new conversation({
+                    participants: sortedPair,
+                    isGroup: false,
+                    unreadCount: 0
+                });
+                await chatConversation.save();
+            }
+        } else {
+            return response(res, 400, false, "Provide receiverId or participants/group or conversationId");
         }
-        //create message object
-        let imageOrVideoUrl = null;
-        let contentType = null;
+
+        if (!chatConversation) {
+            return response(res, 500, false, "Unable to resolve conversation");
+        }
+
+        let mediaUrl = null;
+        let fileName = null;
+        let contentType = "text";
+
         if (file) {
             const uploadFile = await uploadFileToCloudinary(file);
-
             if (!uploadFile?.secure_url) {
                 return response(res, 500, false, "File upload failed");
-            };
-            imageOrVideoUrl = uploadFile?.secure_url;
-
-            if (file.mimetype.startsWith("image/")) {
-                contentType = "image";
-            } else if (file.mimetype.startsWith("video/")) {
-                contentType = "video";
-            } else {
-                return response(res, 400, false, "Unsupported file type");
             }
+            mediaUrl = uploadFile.secure_url;
+            fileName = file.originalname;
+
+            if (file.mimetype.startsWith("image/")) contentType = "image";
+            else if (file.mimetype.startsWith("video/")) contentType = "video";
+            else if (file.mimetype.startsWith("audio/")) contentType = "audio";
+            else contentType = "file";
         } else if (content?.trim()) {
             contentType = "text";
         }
-        else {
-            return response(res, 400, false, "Message content or file is required");
+
+        if (req.body.contentType) {
+            contentType = req.body.contentType;
         }
-        //
+
+        if (!content?.trim() && !mediaUrl && contentType !== 'sticker') {
+            return response(res, 400, false, "Message text or media is required");
+        }
+
         const message = new Message({
             conversation: chatConversation._id,
             sender: senderObjectId,
             receiver: receiverObjectId,
-            content,
+            content: content || "",
             contentType,
-            imageOrVideoUrl,
-            messageStatus,
+            mediaUrl,
+            fileName,
+            messageStatus: messageStatus || "sent",
         });
         //add message to conversation
         await message.save();
 
-        if (message?.content) {
-            chatConversation.lastMessage = message._id;
-        }
+        chatConversation.lastMessage = message._id;
         chatConversation.unreadCount += 1;
         await chatConversation.save();
 
-        const populatedMessage = await Message.findOne(message?._id)
+        const populatedMessage = await Message.findById(message._id)
             .populate("sender", "username profilePicture")
             .populate("receiver", "username profilePicture");
 
-            //emit socket event
-            console.log("Checking socket emission...");
-            console.log("req.io exists:", !!req.io);
-            console.log("req.socketUserMap exists:", !!req.socketUserMap);
-            
-            if(req.io && req.socketUserMap){
-                console.log("receiverId:", receiverId);
-                const receiverSocketId = req.socketUserMap.get(receiverId.toString());
-                console.log("receiverSocketId:", receiverSocketId);
-                console.log("Online users:", Array.from(req.socketUserMap.entries()));
-                
-                if(receiverSocketId){
-                    console.log("Emitting receive_message to socket:", receiverSocketId);
-                    req.io.to(receiverSocketId).emit("receive_message", populatedMessage);
+        // Emit socket event to all recipients
+        if (req.io && req.socketUserMap) {
+            const participantIds = chatConversation.participants.map((id) => id.toString());
+            participantIds.forEach((participantId) => {
+                if (participantId === senderId) return; // no need to emit to sender
+                const socketId = req.socketUserMap.get(participantId);
+                if (socketId) {
+                    req.io.to(socketId).emit("receive_message", populatedMessage);
+                }
+            });
+
+            if (receiverObjectId) {
+                const receiverSocketId = req.socketUserMap.get(receiverObjectId.toString());
+                if (receiverSocketId) {
                     message.messageStatus = "delivered";
                     await message.save();
-                } else {
-                    console.log("Receiver is offline, message not delivered in real-time");
                 }
-            } else {
-                console.log("Socket or socketUserMap not available");
             }
+        }
 
         return response(res, 200, true, "Message sent successfully", populatedMessage);
 
@@ -155,7 +190,7 @@ exports.getMessages = async (req, res) => {
             .sort({ createdAt: 1 });
         console.log("getMessages: Found messages:", messages.length);
         await Message.updateMany(
-            { conversation: conversationId, receiver: userId, messageStatus:{$in: ("sent", "delivered")} },
+            { conversation: conversationId, receiver: userId, messageStatus: { $in: ["sent", "delivered"] } },
             { $set: { messageStatus: "read" } }
         );
 

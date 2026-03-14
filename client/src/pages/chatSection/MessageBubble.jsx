@@ -121,17 +121,45 @@ const MessageBubble = ({ message, theme, onReact, currentUser, deleteMessage }) 
           </button>
 
           {/* Content */}
-          {message.contentType === "image" && (
+          {message.contentType === "image" && message.mediaUrl && (
             <img
-              src={message.imageOrVideoUrl}
+              src={message.mediaUrl}
               alt="media"
               className="rounded-md mb-1 max-h-60 object-cover w-full"
             />
           )}
 
-          <p className="text-[14.2px] leading-tight break-words whitespace-pre-wrap">
-            {message.content}
-          </p>
+          {message.contentType === "video" && message.mediaUrl && (
+            <video controls src={message.mediaUrl} className="rounded-md mb-1 max-h-60 w-full" />
+          )}
+
+          {message.contentType === "audio" && message.mediaUrl && (
+            <audio controls src={message.mediaUrl} className="w-full mb-1" />
+          )}
+
+          {message.contentType === "file" && message.mediaUrl && (
+            <div className="p-2 mb-1 bg-gray-100 rounded">
+              <a href={message.mediaUrl} target="_blank" rel="noreferrer" className="text-blue-500 underline">
+                {message.fileName || 'Download attachment'}
+              </a>
+            </div>
+          )}
+
+          {message.contentType === "sticker" && message.content && (
+            <div className="text-3xl mb-1">{message.content}</div>
+          )}
+
+          {message.contentType !== 'sticker' && message.contentType !== 'image' && message.contentType !== 'video' && message.contentType !== 'audio' && message.contentType !== 'file' && message.content && (
+            <p className="text-[14.2px] leading-tight break-words whitespace-pre-wrap">
+              {message.content}
+            </p>
+          )}
+
+          {message.contentType === 'image' || message.contentType === 'video' || message.contentType === 'audio' || message.contentType === 'file' ? (
+            message.content ? (
+              <p className="text-[14.2px] leading-tight break-words whitespace-pre-wrap mt-1">{message.content}</p>
+            ) : null
+          ) : null}
 
           {/* Footer */}
           <div className="flex items-center justify-end gap-1 mt-0.5 h-4 select-none">

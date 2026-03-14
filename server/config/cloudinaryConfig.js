@@ -11,16 +11,37 @@ cloudinary.config({
 });
 
 const uploadFileToCloudinary = (file) => {
+    let resourceType = 'raw';
+    if (file.mimetype.startsWith('image/')) {
+        resourceType = 'image';
+    } else if (file.mimetype.startsWith('video/')) {
+        resourceType = 'video';
+    } else if (file.mimetype.startsWith('audio/')) {
+        // Cloudinary treats audio as video/raw; use video for playback + transformations
+        resourceType = 'video';
+    }
+
     const options = {
-        resource_type: file.mimetype.startsWith('video') ? 'video' : 'Image', 
+        resource_type: resourceType,
     };
+    if (file.mimetype.startsWith('audio/')) {
+        options.format = 'mp3';
+    }
 
     return new Promise((resolve, reject) => {
-        const uploader = file.mimetype.startsWith('video') ? cloudinary.uploader.upload_large : cloudinary.uploader.upload;
+        const uploader = (resourceType === 'video' || resourceType === 'raw')
+            ? cloudinary.uploader.upload_large
+            : cloudinary.uploader.upload;
+
         uploader(file.path, options, (error, result) => {
-            fs.unlinkSync(file.path); // Remove file from local uploads folder
-            if (error){
-                 return reject(error);
+            try {
+                fs.unlinkSync(file.path); // Remove file from local uploads folder
+            } catch (e) {
+                console.warn('Could not remove temp file:', file.path, e);
+            }
+
+            if (error) {
+                return reject(error);
             }
             resolve(result);
         });

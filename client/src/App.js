@@ -18,6 +18,10 @@ function App() {
   const { setCurrentUser, initSocketListeners, cleanup } = useChatStore();
 
   useEffect(() => {
+    if (window.Notification && Notification.permission === 'default') {
+      Notification.requestPermission().catch((err) => console.warn('Notification permission error', err));
+    }
+
     if (user?._id) {
       const socket = initializeSocket();
       if (socket) {
