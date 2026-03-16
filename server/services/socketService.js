@@ -144,6 +144,33 @@ const initializeSocket = (server) => {
 
             console.log("User disconnected:", userId);
         });
+
+        // ================= VIDEO CALL SIGNALING =================
+        socket.on("call_user", (data) => {
+            const { userToCall, signalData, from, name } = data;
+            console.log(`call_user: ${from} calling ${userToCall}`);
+            io.to(userToCall).emit("call_incoming", {
+                signal: signalData,
+                from,
+                name
+            });
+        });
+
+        socket.on("answer_call", (data) => {
+            const { to, signal } = data;
+            console.log(`answer_call: answering to ${to}`);
+            io.to(to).emit("call_accepted", signal);
+        });
+
+        socket.on("ice_candidate", (data) => {
+            const { to, candidate } = data;
+            io.to(to).emit("ice_candidate", candidate);
+        });
+
+        socket.on("end_call", (data) => {
+            const { to } = data;
+            io.to(to).emit("call_ended");
+        });
     });
 
     io.socketUserMap = onlineUsers;

@@ -8,6 +8,7 @@ import whatsappImage from '../../images/whatsapp_image.png'
 import { FaArrowLeft, FaEllipsisV, FaFile, FaImage, FaLock, FaPaperclip, FaPaperPlane, FaSmile, FaTimes, FaVideo, FaPlus } from 'react-icons/fa';
 import MessageBubble from "./MessageBubble";
 import EmojiPicker from 'emoji-picker-react';
+import VideoCall from "./VideoCall";
 
 const isValidate = (date) => {
     return date instanceof Date && !isNaN(date);
@@ -40,7 +41,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
     }, [user, isAuthenticated]);
 
     const { messages, sendMessage, fetchMessages, fetchConversations, conversations, isUserTyping, startTyping,
-         stopTyping, getUserLastSeen, addReaction, deleteMessage, isUserOnline } = useChatStore();
+         stopTyping, getUserLastSeen, addReaction, deleteMessage, isUserOnline, initiateCall } = useChatStore();
     //get online status of user and last seen
     const online = isUserOnline(selectedContact?._id);
     const lastSeen = getUserLastSeen(selectedContact?._id);
@@ -346,7 +347,10 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                     )}
                 </div>
                 <div className="flex items-center space-x-4">
-                    <button className="focus:outline-none">
+                    <button 
+                        className="focus:outline-none hover:text-green-500 transition-colors"
+                        onClick={() => initiateCall(selectedContact._id)}
+                    >
                         <FaVideo className="h-5 w-5" />
                     </button>
                     <button className="focus:outline-none">
@@ -534,6 +538,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
                     <FaPaperPlane className="h-6 w-6 text-green-500"/>
                 </button>
             </div>
+            <VideoCall />
         </div>
     );
 }

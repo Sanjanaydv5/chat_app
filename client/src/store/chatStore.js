@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { getSocket } from "../services/chat.service";
 import  axiosInstance  from "../services/url.service";
+import { toast } from "react-toastify";
 
 
 export const useChatStore = create((set, get) => ({
@@ -11,6 +12,10 @@ export const useChatStore = create((set, get) => ({
     error: null,
     onlineUsers: new Map(),
     typingUsers: new Map(),
+    call: {},
+    incomingCall: null,
+    localStream: null,
+    remoteStream: null,
 
 
 
@@ -28,6 +33,10 @@ export const useChatStore = create((set, get) => ({
         socket.off('message_delete');
         socket.off('message_read');
         socket.off('reaction_update');
+        socket.off('call_incoming');
+        socket.off('call_accepted');
+        socket.off('ice_candidate');
+        socket.off('call_ended');
 
         //listen for incoming messages
         socket.on('receive_message', (message) => {
@@ -40,6 +49,18 @@ export const useChatStore = create((set, get) => ({
                     const body = message.contentType === 'text' ? message.content || 'Sent a message' : `Sent a ${message.contentType}`;
                     new Notification(title, { body });
                 }
+            }
+
+            // Also show toast notification within the app
+            if (message.conversation !== currentConversation && message.sender?._id !== currentUser?._id) {
+                toast.info(`New message from ${message.sender?.username || 'someone'}: ${message.contentType === 'text' ? message.content : 'Media'}`, {
+                    position: "bottom-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                });
             }
 
             // Add message if it doesn't already exist and belongs to current conversation
@@ -145,6 +166,28 @@ export const useChatStore = create((set, get) => ({
                 newOnlineUsers.set(userId, { isOnline, lastSeen });
                 return { onlineUsers: newOnlineUsers };
             });
+        });
+
+        // ================= VIDEO CALL LISTENERS =================
+        socket.on('call_incoming', (data) => {
+            console.log("Call incoming from:", data.name);
+            set({ incomingCall: data });
+        });
+
+        socket.on('call_accepted', (signal) => {
+            console.log("Call accepted, signal received");
+            set({ call: { ...get().call, accepted: true, signal } });
+        });
+
+        socket.on('ice_candidate', (candidate) => {
+            console.log("ICE candidate received");
+            // This will be handled in the VideoCall component directly via a callback or by checking state
+            set({ call: { ...get().call, candidate } });
+        });
+
+        socket.on('call_ended', () => {
+            console.log("Call ended by remote");
+            get().cleanupCall();
         });
         //emit status check for all users in conversations list
         const { conversations, currentUser } = get();
@@ -444,8 +487,81 @@ export const useChatStore = create((set, get) => ({
         const { onlineUsers } = get();
         return onlineUsers.get(userId)?.lastSeen || null;
     },
+
+    // ================= VIDEO CALL ACTIONS =================
+    setupLocalStream: async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            set({ localStream: stream });
+            return stream;
+        } catch (error) {
+            console.error("Error accessing media devices:", error);
+            toast.error("Could not access camera/microphone");
+            return null;
+        }
+    },
+
+    initiateCall: async (userToCall) => {
+        const { currentUser } = get();
+        const socket = getSocket();
+        
+        const stream = await get().setupLocalStream();
+        if (!stream) return;
+
+        console.log(`Initiating call to: ${userToCall}`);
+        // In a real app, you'd generate the PC and signal here, 
+        // but we'll let the VideoCall component handle the WebRTC handshake
+        // and just set the target in state for the component to pick up.
+        set({ call: { isOutgoing: true, targetId: userToCall, calling: true } });
+    },
+
+    answerCall: async () => {
+        const { incomingCall } = get();
+        if (!incomingCall) return;
+
+        const stream = await get().setupLocalStream();
+        if (!stream) {
+            get().rejectCall();
+            return;
+        }
+
+        set({ call: { isIncoming: true, accepted: true, targetId: incomingCall.from, signal: incomingCall.signal } });
+        set({ incomingCall: null });
+    },
+
+    rejectCall: () => {
+        const { incomingCall } = get();
+        const socket = getSocket();
+        if (incomingCall && socket) {
+            socket.emit("end_call", { to: incomingCall.from });
+        }
+        set({ incomingCall: null });
+    },
+
+    endCall: (targetId) => {
+        const socket = getSocket();
+        if (socket && targetId) {
+            socket.emit("end_call", { to: targetId });
+        }
+        get().cleanupCall();
+    },
+
+    cleanupCall: () => {
+        const { localStream } = get();
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+        set({
+            call: {},
+            incomingCall: null,
+            localStream: null,
+            remoteStream: null
+        });
+    },
+
     //clear chat store
     cleanup: () => {
+        get().cleanupCall();
         set({
             conversations: [],
             currentConversation: null,
