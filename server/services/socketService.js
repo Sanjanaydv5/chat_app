@@ -26,16 +26,18 @@ const initializeSocket = (server) => {
         socket.on("user_connected", async (connectingUserId) => {
             console.log("user_connected event received for userId:", connectingUserId);
             userId = connectingUserId;
-            onlineUsers.set(userId, socket.id);
+            
+            // Join a room named after the userId. This allows us to target multiple sessions/tabs.
             socket.join(userId);
             
-            console.log("Online users map:", Array.from(onlineUsers.entries()));
+            onlineUsers.set(userId, socket.id); // Still useful for quick online checks locally
 
             await User.findByIdAndUpdate(userId, {
                 isOnline: true,
                 lastSeen: new Date(),
             });
 
+            // Broadcast to all clients that this user is online
             io.emit("user_status", { userId, isOnline: true });
             console.log("Broadcasted user_status for userId:", userId);
         });
@@ -52,17 +54,18 @@ const initializeSocket = (server) => {
 
         // ================= SEND MESSAGE =================
         socket.on("send_message", (message) => {
-            const receiverSocketId = onlineUsers.get(message.receiver?._id);
-            if (receiverSocketId) {
-                io.to(receiverSocketId).emit("receive_message", message);
+            const receiverId = message.receiver?._id || message.receiver;
+            if (receiverId) {
+                // Emit to the receiver's room (which includes all their active sockets)
+                io.to(receiverId.toString()).emit("receive_message", message);
             }
         });
 
         // ================= TYPING START =================//
         socket.on("typing_start", ({ conversationId, receiverId }) => {
-            if (!userId) return;
+            if (!userId || !receiverId) return;
 
-            socket.to(receiverId).emit("user_typing", {
+            io.to(receiverId.toString()).emit("user_typing", {
                 conversationId,
                 userId,
                 isTyping: true,
@@ -71,9 +74,9 @@ const initializeSocket = (server) => {
 
         // ================= TYPING STOP =================
         socket.on("typing_stop", ({ conversationId, receiverId }) => {
-            if (!userId) return;
+            if (!userId || !receiverId) return;
 
-            socket.to(receiverId).emit("user_typing", {
+            io.to(receiverId.toString()).emit("user_typing", {
                 conversationId,
                 userId,
                 isTyping: false,
@@ -112,15 +115,11 @@ const initializeSocket = (server) => {
                     reactions: populatedMessage.reactions,
                 };
 
-                const senderSocket = onlineUsers.get(
-                    populatedMessage.sender._id.toString()
-                );
-                const receiverSocket = onlineUsers.get(
-                    populatedMessage.receiver._id.toString()
-                );
+                const senderId = populatedMessage.sender._id.toString();
+                const receiverId = populatedMessage.receiver._id.toString();
 
-                if (senderSocket) io.to(senderSocket).emit("reaction_update", update);
-                if (receiverSocket) io.to(receiverSocket).emit("reaction_update", update);
+                io.to(senderId).emit("reaction_update", update);
+                io.to(receiverId).emit("reaction_update", update);
             } catch (error) {
                 console.error("Reaction error:", error);
             }

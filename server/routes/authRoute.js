@@ -13,6 +13,7 @@ router.get('/logout', authController.logout);
 router.put('/update-profile', authMiddleware, authController.updateProfile);
 router.get('/check-authenticated', authMiddleware, authController.checkAuthenticated);
 router.get('/users', authMiddleware, authController.getAllUsers);
+router.post('/add-contact', authMiddleware, authController.addContact);
 
 module.exports = router;
 //

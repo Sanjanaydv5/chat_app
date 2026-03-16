@@ -223,38 +223,93 @@ const logout = (req, res) => {
 }
 
 const getAllUsers = async (req, res) => {
-    const loggedInUser = req.user.id;
+    const loggedInUserId = req.user.id;
     try {
-        const users = await User.find({ _id: { $ne: loggedInUser } }).select(
-            "username profilePicture lastSeen about"
-        ).lean();
+        const currentUser = await User.findById(loggedInUserId);
+        if (!currentUser) {
+            return response(res, 404, false, "User not found");
+        }
 
-        const usersWithConversations = await Promise.all(users.map(async (user) => {
-            // Fetch or create conversation logic can be added here
+        // All Contacts:
+        // Return all users who are in the currentUser's contacts list
+        const contacts = await User.find({
+            _id: { $in: currentUser.contacts, $ne: loggedInUserId }
+        }).select("username profilePicture lastSeen about isOnline").lean();
+
+        const usersWithConversations = await Promise.all(contacts.map(async (user) => {
             const conversationData = await conversation.findOne({
-                participants: { $all: [loggedInUser, user?._id] }
-            }).populate(
-                {
-                    path: "lastMessage",
-                    select: "content createdAt sender receiver"
-                }
-            ).lean();
+                participants: { $all: [loggedInUserId, user?._id] }
+            }).populate({
+                path: "lastMessage",
+                select: "content createdAt sender receiver"
+            }).lean();
             return {
                 ...user,
                 conversation: conversationData || null
             };
         }));
 
-        return response(res, 200, true, "Users fetched successfully", {
+        return response(res, 200, true, "Contacts fetched successfully", {
             users: usersWithConversations
-        })
+        });
     } catch (error) {
         console.error("Error in getAllUsers:", error);
         return response(res, 500, false, "Internal Server Error");
     }
 }
 
+const addContact = async (req, res) => {
+    const { contactInfo } = req.body; // email or phone
+    const loggedInUserId = req.user.id;
+
+    try {
+        if (!contactInfo) {
+            return response(res, 400, false, "Email or phone number is required");
+        }
+
+        // Find user by email or phone
+        const targetUser = await User.findOne({
+            $or: [{ email: contactInfo.toLowerCase() }, { phoneNumber: contactInfo }]
+        });
+
+        if (!targetUser) {
+            return response(res, 404, false, "User not found with provided contact information");
+        }
+
+        if (targetUser._id.toString() === loggedInUserId) {
+            return response(res, 400, false, "You cannot add yourself as a contact");
+        }
+
+        const currentUser = await User.findById(loggedInUserId);
+
+        // Check if already in contacts
+        if (currentUser.contacts.includes(targetUser._id)) {
+            return response(res, 400, true, "User is already in your contacts");
+        }
+
+        currentUser.contacts.push(targetUser._id);
+        await currentUser.save();
+
+        return response(res, 200, true, "Contact added successfully. You can now start chatting!", {
+            contact: {
+                _id: targetUser._id,
+                username: targetUser.username,
+                profilePicture: targetUser.profilePicture
+            }
+        });
+
+    } catch (error) {
+        console.error("Error in addContact:", error);
+        return response(res, 500, false, "Internal Server Error");
+    }
+}
+
     module.exports = {
         sendOTP,
-        verifyOTP, updateProfile, logout, checkAuthenticated, getAllUsers
+        verifyOTP, 
+        updateProfile, 
+        logout, 
+        checkAuthenticated, 
+        getAllUsers,
+        addContact
     };

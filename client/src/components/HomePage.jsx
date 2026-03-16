@@ -29,7 +29,7 @@ const HomePage = () => {
 
 
     return (
-        <Layout contacts={allUsers}>
+        <Layout contacts={allUsers} onContactAdded={fetchUsers}>
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

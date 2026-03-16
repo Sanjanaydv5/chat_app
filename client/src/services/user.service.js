@@ -78,3 +78,13 @@ export const getAllUsers = async () => {
     throw error.response?.data || error.message;
   }
 };
+
+// ---------------- ADD CONTACT ----------------
+export const addContact = async (contactInfo) => {
+  try {
+    const res = await axiosInstance.post("/auth/add-contact", { contactInfo });
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};

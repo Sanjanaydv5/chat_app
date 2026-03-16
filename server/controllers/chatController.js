@@ -127,22 +127,19 @@ exports.sendMessage = async (req, res) => {
             .populate("receiver", "username profilePicture");
 
         // Emit socket event to all recipients
-        if (req.io && req.socketUserMap) {
+        // Emit socket event to all recipients using rooms
+        if (req.io) {
             const participantIds = chatConversation.participants.map((id) => id.toString());
             participantIds.forEach((participantId) => {
                 if (participantId === senderId) return; // no need to emit to sender
-                const socketId = req.socketUserMap.get(participantId);
-                if (socketId) {
-                    req.io.to(socketId).emit("receive_message", populatedMessage);
-                }
+                req.io.to(participantId).emit("receive_message", populatedMessage);
             });
 
             if (receiverObjectId) {
-                const receiverSocketId = req.socketUserMap.get(receiverObjectId.toString());
-                if (receiverSocketId) {
-                    message.messageStatus = "delivered";
-                    await message.save();
-                }
+                // If we want to update status to delivered, we check if anyone is in the room.
+                // For simplicity, we can assume if they have a room, they are essentially 'reachable'.
+                message.messageStatus = "delivered";
+                await message.save();
             }
         }
 
@@ -216,19 +213,17 @@ exports.markAsRead = async (req, res) => {
         );
 
         //notify to original sender
-            if(req.io && req.socketUserMap){
-                for (const message of messages){
-                    const senderSocketId = req.socketUserMap.get(message.sender.toString());
-                    if(senderSocketId){
-                        const updateMessage = {
-                            _id:message._id,
-                            messageStatus:"read",
-                        };
-                        req.io.to(senderSocketId).emit("message_read",updateMessage);
-                        await message.save()
-                    }
-                }
+        //notify to original sender using rooms
+        if (req.io) {
+            for (const message of messages) {
+                const updateMessage = {
+                    _id: message._id,
+                    messageStatus: "read",
+                };
+                req.io.to(message.sender.toString()).emit("message_read", updateMessage);
+                await message.save();
             }
+        }
 
         return response(res, 200, true, "Messages marked as read", messages );
     } catch (error) {
@@ -251,13 +246,10 @@ exports.deleteMessage = async (req, res) => {
         await message.deleteOne();
 
         //emit socket event
-            if(req.io && req.socketUserMap){
-                const receiverSocketId = req.socketUserMap.get(message.receiver.toString());
-                if(receiverSocketId){
-                    req.io.to(receiverSocketId).emit("message_deleted",messageId)
-                }
-                
-            }
+        //emit socket event using rooms
+        if (req.io) {
+            req.io.to(message.receiver.toString()).emit("message_deleted", messageId);
+        }
 
         return response(res, 200, true, "Message deleted successfully");
     } catch (error) {

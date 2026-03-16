@@ -1,9 +1,8 @@
-require("dotenv").config();
-
+require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
+console.log("ENV CHECK:", process.env.MONGO_URI?.slice(0, 20));
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const connectDb = require("./config/dbConnect");
 const bodyParser = require("body-parser");
 const authRoute = require("./routes/authRoute"); // You named it authRoute here
@@ -11,23 +10,24 @@ const chatRoute = require("./routes/chatRoute");
 const statusRoute = require("./routes/statusRoute");
 const initializeSocket = require("./services/socketService");
 const http = require('http');
+const dns = require('node:dns/promises');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 
 // --- 1. FIXED CORS CONFIGURATION ---
 const corsOptions = {
-  origin: process.env.CLIENT_URL || '"https://sanjana-chat-app.vercel.app"', 
+  origin: process.env.CLIENT_URL || '"https://sanjana-chat-app.vercel.app"',
   credentials: true, // Note: lowercase 'c' is required
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
 
 // --- 2. MIDDLEWARE (Apply CORS before routes) ---
-app.use(cors(corsOptions)); 
-app.use(express.json()); 
-app.use(cookieParser()); 
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Database connection,,,
@@ -50,17 +50,18 @@ app.get("/", (req, res) => {
 });
 
 // Use the correct variable name: authRoute
-app.use("/api/auth", authRoute); 
+app.use("/api/auth", authRoute);
 app.use("/api/chats", chatRoute);
 app.use('/api/status', statusRoute);
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });s
+  res.status(404).json({ error: "Route not found" });
 });
 
 // --- 4. START SERVER ---
 server.listen(PORT, () => {
   console.log(`Server is running on port... ${PORT}`);
+
 });
 

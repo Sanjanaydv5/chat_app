@@ -6,8 +6,10 @@ import useLayoutStore from "../../store/layoutStore";
 import useThemeStore from "../../store/themeStore";
 import useUserStore from "../../store/useUserStore";
 import formatTimeStamp from "../../utils/formatTime";
+import { addContact } from "../../services/user.service";
+import { toast } from "react-toastify";
 
-const ChatList = ({ contacts = [] }) => {
+const ChatList = ({ contacts = [], onContactAdded }) => {
   const setSelectedContact = useLayoutStore((state) => state.setSelectedContact);
   const selectedContact = useLayoutStore((state) => state.selectedContact);
   const { theme } = useThemeStore();
@@ -15,6 +17,28 @@ const ChatList = ({ contacts = [] }) => {
 
   const [searchTerms, setSearchTerms] = useState("");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [contactInput, setContactInput] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddContact = async () => {
+    if (!contactInput.trim()) return;
+    setIsAdding(true);
+    try {
+      const result = await addContact(contactInput.trim());
+      if (result.status) {
+        toast.success(result.message || "Contact added successfully!");
+        setContactInput("");
+        setIsInviteModalOpen(false);
+        if (onContactAdded) onContactAdded();
+      } else {
+        toast.error(result.message || "Failed to add contact");
+      }
+    } catch (error) {
+      toast.error(error.message || "An error occurred");
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   const filteredContacts = (contacts || []).filter((contact) =>
     contact?.username?.toLowerCase().includes(searchTerms.toLowerCase()) &&
@@ -137,15 +161,23 @@ const ChatList = ({ contacts = [] }) => {
               </div>
               
               <div className="space-y-4">
-                <p className="text-sm text-gray-400">Search for people by username or email to start a new encrypted conversation.</p>
+                <p className="text-sm text-gray-400">Enter a user's email or phone number to add them to your contacts.</p>
                 <div className="flex gap-2">
                     <input 
                       type="text" 
-                      placeholder="Enter username..." 
+                      placeholder="Email or Phone..." 
+                      value={contactInput}
+                      onChange={(e) => setContactInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddContact()}
                       className={`flex-1 px-4 py-2 rounded-xl outline-none border ${theme === "dark" ? "bg-[#111b21] border-gray-700" : "bg-gray-50 border-gray-200"}`}
+                      disabled={isAdding}
                     />
-                    <button className="bg-green-500 px-4 py-2 rounded-xl text-white hover:bg-green-600 transition-colors">
-                      <FaUserPlus />
+                    <button 
+                      onClick={handleAddContact}
+                      disabled={isAdding}
+                      className={`bg-green-500 px-4 py-2 rounded-xl text-white hover:bg-green-600 transition-colors ${isAdding ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      {isAdding ? <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" /> : <FaUserPlus />}
                     </button>
                 </div>
               </div>
