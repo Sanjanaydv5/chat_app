@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { getSocket } from "../services/chat.service";
-import  axiosInstance  from "../services/url.service";
+import axiosInstance from "../services/url.service";
 import { toast } from "react-toastify";
 
 
@@ -97,8 +97,8 @@ export const useChatStore = create((set, get) => ({
         socket.on('message_read', (updatedMessage) => {
             set((state) => ({
                 messages: state.messages.map((msg) =>
-                    msg._id === updatedMessage._id 
-                        ? { ...msg, messageStatus: updatedMessage.messageStatus } 
+                    msg._id === updatedMessage._id
+                        ? { ...msg, messageStatus: updatedMessage.messageStatus }
                         : msg
                 )
             }));
@@ -266,7 +266,7 @@ export const useChatStore = create((set, get) => ({
         const media = formData.get("media");
         const content = formData.get("content");
         const messageStatus = formData.get("messageStatus");
-        
+
         console.log("FormData values:", { senderId, receiverId, content, messageStatus, media: media?.name });
 
 
@@ -304,52 +304,52 @@ export const useChatStore = create((set, get) => ({
             messageStatus,
         };
         set((state) => ({
-    messages: [...state.messages, optimisticMessage]
-}));
+            messages: [...state.messages, optimisticMessage]
+        }));
         try {
-    const response = await axiosInstance.post(
-        "/chats/send-message",
-        formData,
-        {
-            headers: {
-                // Let axios set the boundary automatically
-                "Content-Type": "multipart/form-data",
-            },
+            const response = await axiosInstance.post(
+                "/chats/send-message",
+                formData,
+                {
+                    headers: {
+                        // Let axios set the boundary automatically
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+
+            console.log("sendMessage response:", response.data);
+
+            const messageData = response.data?.data ?? response.data;
+            console.log("sendMessage messageData:", messageData);
+
+            // Replace optimistic message with real one
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg._id === tempId ? messageData : msg
+                ),
+                currentConversation: messageData.conversation ?? state.currentConversation,
+                error: null,
+            }));
+
+            return messageData;
+        } catch (error) {
+            console.error("Error sending message", error);
+
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg._id === tempId
+                        ? { ...msg, messageStatus: "failed" }
+                        : msg
+                ),
+                error:
+                    error?.response?.data?.message ||
+                    error?.message ||
+                    "Failed to send message",
+            }));
+
+            throw error;
         }
-    );
-    
-    console.log("sendMessage response:", response.data);
-
-    const messageData = response.data?.data ?? response.data;
-    console.log("sendMessage messageData:", messageData);
-
-    // Replace optimistic message with real one
-    set((state) => ({
-        messages: state.messages.map((msg) =>
-            msg._id === tempId ? messageData : msg
-        ),
-        currentConversation: messageData.conversation ?? state.currentConversation,
-        error: null,
-    }));
-
-    return messageData;
-} catch (error) {
-    console.error("Error sending message", error);
-
-    set((state) => ({
-        messages: state.messages.map((msg) =>
-            msg._id === tempId
-                ? { ...msg, messageStatus: "failed" }
-                : msg
-        ),
-        error:
-            error?.response?.data?.message ||
-            error?.message ||
-            "Failed to send message",
-    }));
-
-    throw error;
-}
 
     },
     receiveMessage: (message) => {
@@ -502,9 +502,6 @@ export const useChatStore = create((set, get) => ({
     },
 
     initiateCall: async (userToCall) => {
-        const { currentUser } = get();
-        const socket = getSocket();
-        
         const stream = await get().setupLocalStream();
         if (!stream) return;
 
