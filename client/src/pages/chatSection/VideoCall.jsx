@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { FaPhoneSlash, FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa';
 import { useChatStore } from '../../store/chatStore';
 import useUserStore from '../../store/useUserStore';
@@ -16,11 +16,11 @@ const VideoCall = () => {
     const socket = getSocket();
 
     // WebRTC Configuration
-    const servers = {
+    const servers = useMemo(() => ({
         iceServers: [
             { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }
         ]
-    };
+    }), []);
 
     useEffect(() => {
         if (localStream && localVideoRef.current) {
@@ -35,7 +35,7 @@ const VideoCall = () => {
     }, [remoteStream]);
 
     // Initialize WebRTC Peer Connection
-    const createPeerConnection = (targetId) => {
+    const createPeerConnection = useCallback((targetId) => {
         const pc = new RTCPeerConnection(servers);
         
         pc.onicecandidate = (event) => {
@@ -54,7 +54,7 @@ const VideoCall = () => {
 
         peerConnection.current = pc;
         return pc;
-    };
+    }, [servers, socket, localStream]);
 
     // Handle Signaling
     useEffect(() => {
@@ -97,7 +97,7 @@ const VideoCall = () => {
                 .catch(e => console.error("Error adding ice candidate:", e));
         }
 
-    }, [call, socket, currentUser]);
+    }, [call, socket, currentUser, createPeerConnection]);
 
     const toggleMute = () => {
         if (localStream) {

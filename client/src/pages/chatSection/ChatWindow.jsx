@@ -157,14 +157,6 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
         }
     }
 
-    const cancelVoiceNote = () => {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-        }
-        setRecording(false);
-        setAudioBlob(null);
-        setAudioURL(null);
-    }
 
     const handleSendMessage = async () => {
         console.log("handleSendMessage called");
