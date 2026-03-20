@@ -14,8 +14,13 @@ const statusRoute = require("./routes/statusRoute");
 const initializeSocket = require("./services/socketService");
 const http = require('http');
 const dns = require('node:dns/promises');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
-
+const dnsServersEnv = process.env.DNS_SERVERS;
+if (dnsServersEnv) {
+  const servers = dnsServersEnv.split(',').map(s => s.trim()).filter(Boolean);
+  if (servers.length > 0) {
+    dns.setServers(servers);
+  }
+}
 
 const PORT = process.env.PORT || 3000;
 const app = express();
