@@ -1,5 +1,8 @@
 require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
-console.log("ENV CHECK:", process.env.MONGO_URI?.slice(0, 20));
+const DEBUG_LOG_ENV = process.env.DEBUG_LOG_ENV === 'true';
+if (DEBUG_LOG_ENV) {
+  console.log("ENV CHECK: MONGO_URI is configured:", Boolean(process.env.MONGO_URI));
+}
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
