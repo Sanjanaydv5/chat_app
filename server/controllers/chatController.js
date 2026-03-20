@@ -136,10 +136,26 @@ exports.sendMessage = async (req, res) => {
             });
 
             if (receiverObjectId) {
-                // If we want to update status to delivered, we check if anyone is in the room.
-                // For simplicity, we can assume if they have a room, they are essentially 'reachable'.
-                message.messageStatus = "delivered";
-                await message.save();
+                // Only mark as delivered if the receiver is actually online / has active sockets.
+                let isReceiverOnline = false;
+
+                // Prefer an explicit user-to-socket map if provided on the request.
+                if (req.socketUserMap && typeof req.socketUserMap.has === "function") {
+                    isReceiverOnline = req.socketUserMap.has(receiverId);
+                } else if (req.io.sockets && req.io.sockets.adapter && req.io.sockets.adapter.rooms) {
+                    // Fallback: check whether the receiver's room currently has any sockets.
+                    const room = req.io.sockets.adapter.rooms.get
+                        ? req.io.sockets.adapter.rooms.get(receiverId)
+                        : req.io.sockets.adapter.rooms[receiverId];
+                    if (room && ((room.size && room.size > 0) || Object.keys(room.sockets || {}).length > 0)) {
+                        isReceiverOnline = true;
+                    }
+                }
+
+                if (isReceiverOnline) {
+                    message.messageStatus = "delivered";
+                    await message.save();
+                }
             }
         }
 
