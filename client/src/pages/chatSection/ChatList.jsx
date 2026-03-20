@@ -25,7 +25,7 @@ const ChatList = ({ contacts = [], onContactAdded }) => {
     setIsAdding(true);
     try {
       const result = await addContact(contactInput.trim());
-      if (result.status) {
+      if (result.status === "success") {
         toast.success(result.message || "Contact added successfully!");
         setContactInput("");
         setIsInviteModalOpen(false);
