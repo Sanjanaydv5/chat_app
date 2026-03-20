@@ -280,15 +280,16 @@ const addContact = async (req, res) => {
             return response(res, 400, false, "You cannot add yourself as a contact");
         }
 
-        const currentUser = await User.findById(loggedInUserId);
+        // Use $addToSet to atomically add the contact and prevent duplicates at the DB level.
+        const updateResult = await User.updateOne(
+            { _id: loggedInUserId },
+            { $addToSet: { contacts: targetUser._id } }
+        );
 
-        // Check if already in contacts
-        if (currentUser.contacts.includes(targetUser._id)) {
+        // modifiedCount === 0 means the contact was already present ($addToSet was a no-op).
+        if (updateResult.modifiedCount === 0) {
             return response(res, 200, true, "User is already in your contacts");
         }
-
-        currentUser.contacts.push(targetUser._id);
-        await currentUser.save();
 
         return response(res, 200, true, "Contact added successfully. You can now start chatting!", {
             contact: {
