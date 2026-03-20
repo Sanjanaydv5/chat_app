@@ -284,7 +284,7 @@ const addContact = async (req, res) => {
 
         // Check if already in contacts
         if (currentUser.contacts.includes(targetUser._id)) {
-            return response(res, 400, true, "User is already in your contacts");
+            return response(res, 200, true, "User is already in your contacts");
         }
 
         currentUser.contacts.push(targetUser._id);

@@ -1,5 +1,8 @@
 require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
-console.log("ENV CHECK:", process.env.MONGO_URI?.slice(0, 20));
+const DEBUG_LOG_ENV = process.env.DEBUG_LOG_ENV === 'true';
+if (DEBUG_LOG_ENV) {
+  console.log("ENV CHECK: MONGO_URI is configured:", Boolean(process.env.MONGO_URI));
+}
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
@@ -11,15 +14,20 @@ const statusRoute = require("./routes/statusRoute");
 const initializeSocket = require("./services/socketService");
 const http = require('http');
 const dns = require('node:dns/promises');
-dns.setServers(['8.8.8.8', '8.8.4.4']);
-
+const dnsServersEnv = process.env.DNS_SERVERS;
+if (dnsServersEnv) {
+  const servers = dnsServersEnv.split(',').map(s => s.trim()).filter(Boolean);
+  if (servers.length > 0) {
+    dns.setServers(servers);
+  }
+}
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 
 // --- 1. FIXED CORS CONFIGURATION ---
 const corsOptions = {
-  origin: process.env.CLIENT_URL || '"https://sanjana-chat-app.vercel.app"',
+  origin: process.env.CLIENT_URL || 'https://sanjana-chat-app.vercel.app',
   credentials: true, // Note: lowercase 'c' is required
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };

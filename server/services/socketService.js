@@ -2,7 +2,7 @@ const { Server } = require("socket.io");
 const User = require("../models/User");
 const Message = require("../models/Message");
 
-// userId => socketId
+// userId => Set<socketId>
 const onlineUsers = new Map();
 
 // userId => { conversationId: timeout }
@@ -29,8 +29,24 @@ const initializeSocket = (server) => {
             
             // Join a room named after the userId. This allows us to target multiple sessions/tabs.
             socket.join(userId);
-            
-            onlineUsers.set(userId, socket.id); // Still useful for quick online checks locally
+
+            // Track all active sockets for this user to support multiple sessions/tabs.
+            let userSockets = onlineUsers.get(userId);
+            if (!userSockets) {
+                userSockets = new Set();
+                onlineUsers.set(userId, userSockets);
+            }
+            userSockets.add(socket.id);
+
+            // Clean up this socket from the user's set when it disconnects.
+            socket.once("disconnect", () => {
+                const socketsForUser = onlineUsers.get(userId);
+                if (!socketsForUser) return;
+                socketsForUser.delete(socket.id);
+                if (socketsForUser.size === 0) {
+                    onlineUsers.delete(userId);
+                }
+            });
 
             await User.findByIdAndUpdate(userId, {
                 isOnline: true,
@@ -44,7 +60,8 @@ const initializeSocket = (server) => {
 
         // ================= GET USER STATUS =================
         socket.on("get_user_status", (requestedUserId, callback) => {
-            const isOnline = onlineUsers.has(requestedUserId);
+            const socketsForUser = onlineUsers.get(requestedUserId);
+            const isOnline = !!(socketsForUser && socketsForUser.size > 0);
             callback({
                 userId: requestedUserId,
                 isOnline,
