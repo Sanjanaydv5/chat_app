@@ -237,7 +237,6 @@ exports.markAsRead = async (req, res) => {
                     messageStatus: "read",
                 };
                 req.io.to(message.sender.toString()).emit("message_read", updateMessage);
-                await message.save();
             }
         }
 
