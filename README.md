@@ -1,24 +1,69 @@
 # Chat App
 
-A real-time chat web application built with modern web technologies.
+A full-stack real-time chat web application built with **Node.js**, **React.js**, and **Socket.IO**. This app allows users to communicate instantly, with features like user authentication, real-time messaging, and more.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Technology Stack](#technology-stack)
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Development](#development)
+- [License](#license)
+- [Additional Information](#additional-information)
+- [Future Improvements](#future-improvements)
+
+---
 
 ## Overview
 
-This is a full-stack real-time chat application that allows users to communicate instantly with others. The application provides a seamless chatting experience with real-time message delivery and user presence features.
+This is a real-time chat application where users can sign up, log in, send messages instantly, and manage their profiles. Built using **Socket.IO** for real-time communication, it supports both private and group conversations. 
+
+---
 
 ## Technology Stack
 
-- **Frontend:** JavaScript (98.8%)
-- **Backend:** JavaScript/Node.js
-- **Real-time Communication:** WebSocket support for instant messaging
+- **Frontend:**
+  - JavaScript (React.js)
+  - Zustand (for state management)
+  - Tailwind CSS (Responsive Design)
+  - Socket.IO (Real-time communication)
+
+- **Backend:**
+  - Node.js & Express.js
+  - MongoDB (Database)
+  - Socket.IO (Real-time communication)
+  - JWT (JSON Web Tokens) for authentication
+  - Mongoose (MongoDB ORM)
+
+- **Real-time Communication:**
+  - WebSocket support via **Socket.IO** for instant messaging and updates.
+
+---
 
 ## Features
 
-- Real-time messaging
-- User authentication
-- Online/offline status
-- Message history
-- User-friendly interface
+### Backend Features:
+- **Full backend from scratch**: Implemented a complete backend for the chat app using Node.js and Express.js.
+- **User authentication**: Secure login and registration via OTP (Phone & Email).
+- **JWT token-based authentication**: Ensures secure login sessions and user validation.
+- **Socket.IO setup**: Provides real-time communication between clients and servers.
+- **User presence**: Track users' online/offline status and basic "last seen" feature.
+- **Message history**: Messages are stored in MongoDB and can be retrieved as per user needs.
+- **Profile update & story upload logic**: Users can update their profile and share stories.
+- **Protected routes**: Certain routes are protected using JWT-based authentication.
+
+### Frontend Features:
+- **Real-time chat**: Powered by **Socket.IO**, users can send and receive messages instantly.
+- **Zustand store**: A central state management tool to manage user and chat states.
+- **Responsive chat UI**: The chat window is user-friendly and adapts to different screen sizes.
+- **Settings page UI**: Manage settings, like dark mode, user preferences, etc.
+- **Message syncing**: Chat messages are synced between frontend and backend in real-time.
+- **Profile and story upload**: Users can upload their profile pictures and stories from the frontend.
+
+---
 
 ## Screenshots
 
