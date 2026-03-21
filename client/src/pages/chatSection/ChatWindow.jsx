@@ -370,9 +370,18 @@ const ChatWindow = ({ selectedContact, setSelectedContact }) => {
             </div>
             {filePreview && selectedFile && selectedFile.type.startsWith('image/') && (
                 <div className="relative p-2">
+                {selectedFile?.type.startsWith("video/") ? (
+                    <video
+                    src={filePreview}
+                    controls
+                    className="w-80 object-cover rounded shadow-lg mx-auto"/>
+                ) : (
                     <img src={filePreview}
                         alt="file-preview"
                         className="w-full object-cover rounded shadow-lg mx-auto max-h-72" />
+                ) 
+            }
+                    
                     <button
                         onClick={() => {
                             setSelectedFile(null);
