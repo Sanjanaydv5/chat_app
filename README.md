@@ -98,4 +98,8 @@ The application will open at `http://localhost:3000`
 
 ## Development
 
-This project is actively being developed. Feel free to contribute by submitting pull 
+This project is actively being developed. Feel free to contribute by submitting pull requests or opening issues.
+
+## License
+
+This project is open source and available under the MIT License.
